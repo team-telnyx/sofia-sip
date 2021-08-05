@@ -200,6 +200,7 @@ SOFIAPUBFUN void nua_shutdown(nua_t *nua);
 SOFIAPUBFUN void nua_destroy(nua_t *nua);
 
 int nua_count_handles(nua_t *nua);
+int nua_count_handles_(nua_t *nua);
 
 /** Fetch callback context from nua. */
 SOFIAPUBFUN nua_magic_t *nua_magic(nua_t *nua);
@@ -415,6 +416,11 @@ SOFIAPUBFUN void nua_handle_set_has_invite(nua_handle_t *nh, unsigned val);
 SOFIAPUBFUN unsigned nua_handle_is_destroyed(nua_handle_t *nh);
 SOFIAPUBFUN void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,
 	unsigned min, unsigned max);
+
+void	nua_handle_set_no_strip_routes(nua_handle_t *nh);
+void	nua_handle_set_nh_use_compact(nua_handle_t *nh);
+void	nua_handle_set_offer_100rel(nua_handle_t *nh);
+int	nua_handle_count_handles(nua_handle_t *nh);
 
 SOFIA_END_DECLS
 
