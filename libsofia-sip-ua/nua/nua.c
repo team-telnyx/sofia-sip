@@ -1213,3 +1213,27 @@ void nua_handle_unref_user(nua_handle_t *nh)
 	nh_enter;
 	nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
 }
+
+void nua_handle_set_no_strip_routes(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_no_strip_routes = 1;
+}
+
+void nua_handle_set_nh_use_compact(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_use_compact = 1;
+}
+
+void nua_handle_set_offer_100rel(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_offer_100rel = 1;
+}
+
+int	nua_handle_count_handles(nua_handle_t *nh)
+{
+	if (!nh) return -1;
+	return nua_count_handles(nh->nh_nua);
+}

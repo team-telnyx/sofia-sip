@@ -416,6 +416,11 @@ SOFIAPUBFUN unsigned nua_handle_is_destroyed(nua_handle_t *nh);
 SOFIAPUBFUN void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,
 	unsigned min, unsigned max);
 
+void	nua_handle_set_no_strip_routes(nua_handle_t *nh);
+void	nua_handle_set_nh_use_compact(nua_handle_t *nh);
+void	nua_handle_set_offer_100rel(nua_handle_t *nh);
+int	nua_handle_count_handles(nua_handle_t *nh);
+
 SOFIA_END_DECLS
 
 #endif
