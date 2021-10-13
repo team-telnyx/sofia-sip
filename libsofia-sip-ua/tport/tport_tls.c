@@ -382,7 +382,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
     return -1;
 #endif
 #ifndef OPENSSL_NO_DH
-  } else {
+  } else if (ti->enable_dh) {
     BIO *bio = BIO_new_file(ti->key, "r");
     if (bio != NULL) {
       DH *dh = PEM_read_bio_DHparams(bio, NULL, NULL, NULL);
@@ -394,7 +394,7 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
                       ti->key));
         } else {
           long options = SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_SINGLE_DH_USE;
-          SSL_CTX_set_options(tls->ctx, options);
+          options = SSL_CTX_set_options(tls->ctx, options);
           SU_DEBUG_3(("%s\n", "tls: initialized DHE"));
         }
         DH_free(dh);

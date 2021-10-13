@@ -215,6 +215,7 @@ void nua_shutdown(nua_t *nua)
  */
 void nua_destroy(nua_t *nua)
 {
+  nua_handle_t *nh, *nh_next;
   enter;
 
   if (nua) {
@@ -234,6 +235,24 @@ void nua_destroy(nua_t *nua)
 #if HAVE_SMIME		/* Start NRC Boston */
     sm_destroy(nua->sm);
 #endif			/* End NRC Boston */
+
+    /* Cleanup remaining nua handles as they are su_home_new'ed and not su_home_cloned (do not belong to the nua's home)
+       See nh_create_handle().
+    */
+    for (nh = nua->nua_handles; nh; nh = nh_next) {
+      su_home_t *nh_home = (su_home_t *)nh;
+      nh_next = nh->nh_next;
+
+      /* at least one handle will be found here and it is nua default handle
+         which is su_home_cloned (see nua_stack_init()) and therefore does not actually require to be unrefed
+         but it is safe to do that anyways just for sure
+      */
+      SU_DEBUG_9(("nua(%p): found handle with refcount = "MOD_ZU". Destroying.\n", (void *)nh, su_home_refcount(nh_home)));
+
+      /* nua is about to die so we don't remove nh from nua, just unref nh */
+      while(!su_home_unref(nh_home));
+    }
+
 	nua_unref(nua);
   }
 }
@@ -1025,6 +1044,12 @@ static int nua_stack_handle_by_replaces_call(void *arg)
   struct nua_stack_handle_by_replaces_args *a = arg;
 
   a->retval = nua_stack_handle_by_replaces(a->nua, a->r);
+  if (!NH_IS_VALID(a->retval) || NH_IS_DEFAULT(a->retval)) {
+    a->retval = NULL;
+    return 1;
+  }
+
+  nua_handle_ref(a->retval);
 
   return 0;
 }
@@ -1040,6 +1065,12 @@ static int nua_stack_handle_by_call_id_call(void *arg)
   struct nua_stack_handle_by_call_id_args *a = arg;
 
   a->retval = nua_stack_handle_by_call_id(a->nua, a->call_id);
+  if (!NH_IS_VALID(a->retval) || NH_IS_DEFAULT(a->retval)) {
+    a->retval = NULL;
+    return 1;
+  }
+  
+  nua_handle_ref(a->retval);
 
   return 0;
 }
@@ -1070,10 +1101,7 @@ nua_handle_t *nua_handle_by_replaces(nua_t *nua, sip_replaces_t const *r)
     if (su_task_execute(nua->nua_server,
 			nua_stack_handle_by_replaces_call, (void *)&a,
 			NULL) == 0) {
-      nua_handle_t *nh = a.retval;
-
-      if (nh && !NH_IS_DEFAULT(nh) && nh->nh_valid)
-	return nua_handle_ref(nh);
+       return a.retval;
     }
   }
   return NULL;
@@ -1105,10 +1133,7 @@ nua_handle_t *nua_handle_by_call_id(nua_t *nua, const char *call_id)
     if (su_task_execute(nua->nua_server,
 			nua_stack_handle_by_call_id_call, (void *)&a,
 			NULL) == 0) {
-      nua_handle_t *nh = a.retval;
-
-      if (nh && !NH_IS_DEFAULT(nh) && nh->nh_valid)
-	return nua_handle_ref(nh);
+       return a.retval;
     }
   }
   return NULL;
@@ -1174,4 +1199,41 @@ void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,
 	if (nh && nh->nh_ds && nh->nh_ds->ds_usage) {
 		nua_dialog_usage_set_refresh_range(nh->nh_ds->ds_usage, min, max);
 	}
+}
+
+void nua_unref_user(nua_t *nua)
+{
+	enter;
+	nua_signal(nua, NULL, NULL, nua_r_unref, 0, NULL, TAG_NULL());
+}
+
+void nua_handle_unref_user(nua_handle_t *nh)
+{
+	assert(nh);
+	nh_enter;
+	nua_signal(nh->nh_nua, nh, NULL, nua_r_handle_unref, 0, NULL, TAG_NULL());
+}
+
+void nua_handle_set_no_strip_routes(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_no_strip_routes = 1;
+}
+
+void nua_handle_set_nh_use_compact(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_use_compact = 1;
+}
+
+void nua_handle_set_offer_100rel(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_offer_100rel = 1;
+}
+
+int	nua_handle_count_handles(nua_handle_t *nh)
+{
+	if (!nh) return -1;
+	return nua_count_handles(nh->nh_nua);
 }

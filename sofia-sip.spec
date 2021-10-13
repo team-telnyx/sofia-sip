@@ -1,5 +1,5 @@
 Name:           sofia-sip
-Version:        1.13.2
+Version:        1.13.4
 Release:        1%{?dist}
 Summary:        Sofia SIP User-Agent library
 
@@ -11,6 +11,10 @@ BuildRequires:  gcc-c++
 BuildRequires:  openssl-devel >= 0.9.7
 BuildRequires:  glib2-devel >=  2.4
 BuildRequires:  lksctp-tools-devel
+BuildRequires:  autoconf
+BuildRequires:  automake
+BuildRequires:  make
+BuildRequires:  libtool >= 1.5.17
 
 %description
 Sofia SIP is a RFC-3261-compliant library for SIP user agents and
