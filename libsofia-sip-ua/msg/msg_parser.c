@@ -1662,7 +1662,7 @@ size_t msg_header_prepare(msg_mclass_t const *mc, int flags,
   hc = h->sh_class;
   compact = MSG_IS_COMPACT(flags);
   one_line_list = hc->hc_kind == msg_kind_apndlist;
-  comma_list = compact || one_line_list || MSG_IS_COMMA_LISTS(flags);
+  comma_list = (compact && MSG_KIND_IS_COMPACT(hc->hc_kind)) || one_line_list || MSG_IS_COMMA_LISTS(flags);
 
   for (h0 = h, n = 0; ; h = next) {
     next = h->sh_succ;
@@ -2369,6 +2369,7 @@ int msg_header_add(msg_t *msg,
     old = (*hh);
     break;
   case msg_kind_append:
+  case msg_kind_non_compact_append:
   case msg_kind_apndlist:
     while (*hh)
       hh = &(*hh)->sh_next;
@@ -2442,6 +2443,7 @@ int msg_header_prepend(msg_t *msg,
     old = (*hh);
     break;
   case msg_kind_append:
+  case msg_kind_non_compact_append:
   case msg_kind_apndlist:
   case msg_kind_prepend:
     for (end = h; end->sh_next; end = end->sh_next)
