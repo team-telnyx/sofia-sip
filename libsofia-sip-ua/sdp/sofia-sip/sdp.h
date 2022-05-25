@@ -350,7 +350,7 @@ struct sdp_extmap_s {
 	int            em_size;		/**< sizeof sdp_extmap_t  */
 	sdp_extmap_t  *em_next;		/**< Next RTP map entry  */
 	unsigned long  em_id;		/**< local identifier */
-	sdp_mode_t    *em_direction : sdp_sendrecv;		/**< direction */
+	sdp_mode_t    em_direction : sdp_sendrecv;		/**< direction */
 	sdp_text_t    *em_uri;		/**< URI */
 	sdp_text_t    *em_attributes;	        /**< attributes */
 	unsigned       :0;
