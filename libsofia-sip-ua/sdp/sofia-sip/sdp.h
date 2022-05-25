@@ -67,6 +67,8 @@ typedef struct sdp_media_s       sdp_media_t;
 typedef struct sdp_list_s        sdp_list_t;
 /** SDP rtpmap attribute */
 typedef struct sdp_rtpmap_s      sdp_rtpmap_t;
+/** SDP extmap attribute */
+typedef struct sdp_extmap_s      sdp_extmap_t;
 
 /** Message text */
 typedef char const               sdp_text_t;
@@ -331,6 +333,28 @@ struct sdp_rtpmap_s {
 };
 
 SOFIAPUBVAR sdp_rtpmap_t const * const sdp_rtpmap_well_known[128];
+
+/** Mapping header extension feature of RTP.
+ *
+ * The sdp_extmap_t() structure defines which RTP extension should be activated.
+ * a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
+ * where <URI> is a URI, as above, <value> is the local identifier (ID)
+ * of this extension and is an integer in the valid range inclusive (0
+ * is reserved for padding in both forms, and 15 is reserved in the one-
+ * byte header form, as noted above), and <direction> is one of
+ * "sendonly", "recvonly", "sendrecv", or "inactive" (without the
+ * quotes).
+ *
+ */
+struct sdp_extmap_s {
+	int            em_size;		/**< sizeof sdp_extmap_t  */
+	sdp_extmap_t  *em_next;		/**< Next RTP map entry  */
+	unsigned long  em_id;		/**< local identifier */
+	sdp_mode_t    *em_direction : sdp_sendrecv;		/**< direction */
+	sdp_text_t    *em_uri;		/**< URI */
+	sdp_text_t    *em_attributes;	        /**< attributes */
+	unsigned       :0;
+};
 
 /** Duplicate an SDP session description structure. */
 SOFIAPUBFUN sdp_session_t *sdp_session_dup(su_home_t *, sdp_session_t const *);
