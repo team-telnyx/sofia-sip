@@ -283,6 +283,7 @@ static void parse_media(sdp_parser_t *p, char *r, sdp_media_t **result);
 static void parse_payload(sdp_parser_t *p, char *r, sdp_rtpmap_t **result);
 static void parse_media_attr(sdp_parser_t *p, char *r, sdp_media_t *m,
 			     sdp_attribute_t **result);
+static int parse_extmap(sdp_parser_t *p, char *r, sdp_media_t *m);
 static int parse_rtpmap(sdp_parser_t *p, char *r, sdp_media_t *m);
 static int parse_fmtp(sdp_parser_t *p, char *r, sdp_media_t *m);
 static void parse_text_list(sdp_parser_t *p, char *r, sdp_list_t **result);
@@ -1622,7 +1623,11 @@ static void parse_media_attr(sdp_parser_t *p, char *r, sdp_media_t *m,
     return;
   }
 
-  if (rtp && su_casematch(name, "rtpmap")) {
+  if (rtp && su_casematch(name, "extmap")) {
+	if ((n = parse_extmap(p, r, m)) == 0 || n < -1)
+		return;
+  }
+  else if (rtp && su_casematch(name, "rtpmap")) {
 	  if ((n = parse_rtpmap(p, r, m)) == 0 || n < -1)
 		  return;
   }
@@ -1637,6 +1642,70 @@ static void parse_media_attr(sdp_parser_t *p, char *r, sdp_media_t *m,
     a->a_name  = name;
     a->a_value = value;
   }
+}
+
+/** Parse extmap attribute.
+ *
+ * a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
+ *
+ * where <URI> is a URI, as above, <value> is the local identifier (ID)
+ * of this extension and is an integer in the valid range inclusive (0
+ * is reserved for padding in both forms, and 15 is reserved in the one-
+ * byte header form, as noted above), and <direction> is one of
+ * "sendonly", "recvonly", "sendrecv", or "inactive" (without the
+ * quotes).
+ */
+static int parse_extmap(sdp_parser_t *p, char *r, sdp_media_t *m)
+{
+	unsigned long id;
+	char *direction, *uri, *attributes;
+	sdp_extmap_t *em, *first = m->m_extmaps;
+
+	int strict = STRICT(p);
+
+	if (parse_ul(p, &r, &id, 128)) {
+		if (strict)
+			parsing_error(p, "a=extmap: invalid local identifier");
+		return -1;
+	}
+
+	if (*r == '/') {
+		direction = token(&r, "/", TOKEN, NULL);
+		if (su_casematch(direction, "inactive")) {
+			em->em_direction = sdp_inactive;
+		}
+		else if (su_casematch(direction, "sendonly")) {
+			em->em_direction = sdp_sendonly;
+		}
+		else if (su_casematch(direction, "recvonly")) {
+			em->em_direction = sdp_recvonly;
+		}
+		else if (su_casematch(direction, "sendrecv")) {
+			em->em_direction = sdp_sendrecv;
+		}
+	} else {
+		em->em_direction = sdp_sendrecv;
+	}
+
+
+	if (!(uri = token(&r, SPACE TAB, TOKEN, SPACE TAB))) {
+		parsing_error(p,"invalid attribute URI");
+		return -1;
+	}
+
+	attributes = token(&r, SPACE TAB, TOKEN, SPACE TAB);
+
+	em->em_id = id;
+	em->em_next = first;
+	em->em_uri = uri;
+
+	if (attributes) {
+		em->em_attributes = attributes;
+	}
+
+	m->m_extmaps = em;
+
+	return 0;
 }
 
 /** Parse rtpmap attribute.

@@ -287,6 +287,7 @@ struct sdp_media_s
   sdp_text_t       *m_proto_name;	/**< Transport protocol name */
   sdp_list_t       *m_format;		/**< List of media formats */
   sdp_rtpmap_t     *m_rtpmaps;		/**< List of RTP maps */
+  sdp_extmap_t     *m_extmaps;		/**< List of RTP maps */
   sdp_text_t       *m_information;	/**< Media information */
   sdp_connection_t *m_connections;	/**< List of addresses used */
   sdp_bandwidth_t  *m_bandwidths;	/**< Bandwidth specification */
