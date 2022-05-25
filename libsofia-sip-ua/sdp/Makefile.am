@@ -54,7 +54,8 @@ EXTRA_DIST =		sdp.docs $(BUILT_SOURCES) \
 			tests/message-8.sdp \
 			tests/message-9.sdp \
 			tests/message-10.sdp \
-			tests/message-11.sdp
+			tests/message-11.sdp \
+			tests/message-12.sdp
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
