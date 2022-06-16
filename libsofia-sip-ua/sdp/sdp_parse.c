@@ -396,6 +396,10 @@ static void parse_message(sdp_parser_t *p)
        record = next(&message, CRLF, strip)) {
     field = record[0];
 
+    if (strlen(record) < 2) {
+      return;
+    }
+
     rest = record + 2; rest += strspn(rest, strip);
 
     if (record[1] != '=') {
@@ -699,7 +703,7 @@ static void parse_information(sdp_parser_t *p, char *r, sdp_text_t **result)
   /*
    information-field =   ["i=" text CRLF]
    */
-  *result = r;
+  if (result) *result = r;
 }
 
 /* -------------------------------------------------------------------------
@@ -926,6 +930,10 @@ static void parse_bandwidth(sdp_parser_t *p, char *r, sdp_bandwidth_t **result)
     modifier = sdp_bw_tias, name = "TIAS";
   else if (su_casematch(name, "AS") == 1)
     modifier = sdp_bw_as, name = "AS";
+  else if (su_casematch(name, "RS") == 1)
+    modifier = sdp_bw_rs, name = "RS";
+  else if (su_casematch(name, "RR") == 1)
+    modifier = sdp_bw_rr, name = "RR";
   else
 	modifier = sdp_bw_x, name = "BW-X";
 
@@ -1164,7 +1172,7 @@ static void parse_key(sdp_parser_t *p, char *r, sdp_key_t **result)
 
   {
     PARSE_ALLOC(p, sdp_key_t, k);
-    *result = k;
+    if (result) *result = k;
 
     /* These are defined as key-sensitive in RFC 4566 */
 #define MATCH(s, tok) \
@@ -1352,6 +1360,10 @@ static void parse_media(sdp_parser_t *p, char *r, sdp_media_t **result)
       PARSE_ALLOC(p, sdp_list_t, l);
       *fmt = l;
       l->l_text = token(&r, SPACE TAB, TOKEN, SPACE TAB);
+      if (!l->l_text) {
+         parsing_error(p, "m= invalid");
+         return;
+      }
       fmt = &l->l_next;
     }
   }
@@ -1754,6 +1766,10 @@ static void parse_descs(sdp_parser_t *p,
        record && p->pr_ok;
        record = next(&message, CRLF, strip)) {
     char field = record[0];
+
+    if (strlen(record) < 2) {
+      return;
+    }
 
     rest = record + 2; rest += strspn(rest, strip);
 
