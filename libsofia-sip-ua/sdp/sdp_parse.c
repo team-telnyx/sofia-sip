@@ -81,6 +81,7 @@ struct sdp_parser_s {
   unsigned   pr_insane : 1;
   unsigned   pr_c_missing : 1;
   unsigned   pr_config : 1;
+  unsigned   pr_fmt_strict : 1;
 };
 
 #define is_posdigit(c) ((c) >= '1' && (c) <= '9')
@@ -180,6 +181,8 @@ sdp_parse(su_home_t *home, char const msg[], issize_t msgsize, int flags)
       p->pr_c_missing = 1, p->pr_config = 1;
     p->pr_mode_manual = (flags & sdp_f_mode_manual) != 0;
     p->pr_session_mode = sdp_sendrecv;
+    if (flags & sdp_f_media_fmt_strict)
+      p->pr_fmt_strict = 1;
 
     parse_message(p);
 
@@ -1348,7 +1351,8 @@ static void parse_media(sdp_parser_t *p, char *r, sdp_media_t **result)
 
   /* RTP format list */
   if (*r && sdp_media_has_rtp(m)) {
-	  parse_payload(p, r, &m->m_rtpmaps);
+    if (!(m->m_port == 0 && !p->pr_fmt_strict)) 
+	    parse_payload(p, r, &m->m_rtpmaps);
 	  return;
   }
 

@@ -272,6 +272,13 @@ enum {
 #define SOATAG_SDP_PRINT_FLAGS_REF(x) soatag_sdp_print_flags_ref, tag_int_vr(&(x))
 SOFIAPUBVAR tag_typedef_t soatag_sdp_print_flags_ref;
 
+#define SOATAG_SDP_MEDIA_STRICT_FMT(x) soatag_sdp_media_strict_fmt, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t soatag_sdp_media_strict_fmt;
+
+#define SOATAG_SDP_MEDIA_STRICT_FMT_REF(x) \
+  soatag_sdp_media_strict_fmt_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t soatag_sdp_media_strict_fmt_ref;
+
 SOFIA_END_DECLS
 
 #endif /* SOA_TAG_H */

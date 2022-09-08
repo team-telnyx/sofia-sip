@@ -344,6 +344,7 @@ int soa_base_init(char const *name,
     ss->ss_srtp_enable = parent->ss_srtp_enable;
     ss->ss_srtp_confidentiality = parent->ss_srtp_confidentiality;
     ss->ss_srtp_integrity = parent->ss_srtp_integrity;
+    ss->ss_sdp_media_fmt_strict = parent->ss_sdp_media_fmt_strict;
   }
 
   return 0;
@@ -452,6 +453,9 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   int rtp_mismatch;
   int srtp_enable, srtp_confidentiality, srtp_integrity;
   int sdp_print_flag;
+  int sdp_media_fmt_strict;
+
+  tagi_t const *tagi;
 
   af = ss->ss_af;
 
@@ -461,6 +465,7 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   rtp_select = (int)ss->ss_rtp_select;
   rtp_sort = (int)ss->ss_rtp_sort;
   rtp_mismatch = ss->ss_rtp_mismatch;
+  sdp_media_fmt_strict = ss->ss_sdp_media_fmt_strict;
 
   srtp_enable = ss->ss_srtp_enable;
   srtp_confidentiality = ss->ss_srtp_confidentiality;
@@ -498,7 +503,17 @@ int soa_base_set_params(soa_session_t *ss, tagi_t const *tags)
   if (n <= 0)
     return n;
 
+  tagi = tl_find(tags, soatag_sdp_media_strict_fmt);
+  if (tagi) {
+    sdp_media_fmt_strict = tagi->t_value;
+  } else {
+    /* Default to strict fmt validation */
+    sdp_media_fmt_strict = 1;
+  }
+
   ss->ss_sdp_print_flag = sdp_print_flag;
+  sdp_media_fmt_strict = sdp_media_fmt_strict != 0;
+  ss->ss_sdp_media_fmt_strict = sdp_media_fmt_strict;
 
   if (caps_sdp != NONE || caps_sdp_str != NONE) {
     if (caps_sdp == NONE) caps_sdp = NULL;
@@ -691,6 +706,8 @@ int soa_base_get_params(soa_session_t const *ss, tagi_t *tags)
 	       SOATAG_SRTP_INTEGRITY(ss->ss_srtp_integrity),
 
 	       SOATAG_SDP_PRINT_FLAGS(ss->ss_sdp_print_flag),
+
+         SOATAG_SDP_MEDIA_STRICT_FMT(ss->ss_sdp_media_fmt_strict),
 
 	       TAG_END());
 
@@ -2046,15 +2063,21 @@ int soa_set_sdp(soa_session_t *ss,
     return 0;
   }
 
+  if (ss->ss_sdp_media_fmt_strict) {
+    flags |= sdp_f_media_fmt_strict;
+  }
+
   if (sdp0) {
     /* note: case 1 - src in parsed form */
     *sdp = *sdp0;
   }
   else /* if (sdp_str) */ {
     /* note: case 2 - src in unparsed form */
+    const char * error = NULL;
     parser = sdp_parse(ss->ss_home, sdp_str, str_len, flags | sdp_f_anynet);
 
-    if (sdp_parsing_error(parser)) {
+    if ((error = sdp_parsing_error(parser))) {
+      SU_DEBUG_9(("soa_set_sdp error(%s)\n", error));
       sdp_parser_free(parser);
       return soa_set_status(ss, 400, "Bad Session Description");
     }
