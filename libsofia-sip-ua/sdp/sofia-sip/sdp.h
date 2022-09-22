@@ -531,7 +531,9 @@ enum sdp_parse_flags_e {
   /** Do not generate or parse SDP mode */
   sdp_f_mode_manual = 512,
   /** Always generate media-level mode attributes */
-  sdp_f_mode_always = 1024
+  sdp_f_mode_always = 1024,
+  /** Always validate FMT range even for inactive media stream */
+  sdp_f_media_fmt_strict = 2048
 };
 
 /** SDP parser handle. */

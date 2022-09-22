@@ -224,6 +224,9 @@ struct soa_session
   /* SDP Print Flags */
   int ss_sdp_print_flag;
 
+  /* SDP Media FMT Strict */
+  unsigned  ss_sdp_media_fmt_strict:1;
+
   unsigned ss_srtp_enable:1,
     ss_srtp_confidentiality:1,
     ss_srtp_integrity:1;
