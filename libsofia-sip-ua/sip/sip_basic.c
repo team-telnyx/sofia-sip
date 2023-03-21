@@ -2831,9 +2831,9 @@ char const *sip_via_port(sip_via_t const *v, int *using_rport)
  * @code
  * typedef struct {
  *   sip_common_t       id_common[1];    // Common fragment info
- *   sip_error_t		*id_next;        // Link to next (dummy)
- *   char const			*id_value;       // Identity
- *   char const			*id_info;        // Info param containing URL of the cert, with no '<','>'
+ *   sip_identity_t     *id_next;		     // Link to next Identity
+ *   char const			    *id_value;       // Identity
+ *   char const			    *id_info;        // Info param containing URL of the cert, with no '<','>'
  *   char const         *id_signed_identity_digest;	// Digest 
  *   char const         *id_info_alg;    // Field containing alg of the cert
  *   char const         *id_info_ppt;    // Field containing PASSporT Type
