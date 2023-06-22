@@ -1879,7 +1879,7 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_TAG_3261(1),
 	     NTATAG_TIMEOUT_408(agent->sa_timeout_408),
 	     NTATAG_TIMER_C(agent->sa_timer_c),
-       NTATAG_TIMER_H(agent->sa_timer_h),
+	     NTATAG_TIMER_H(agent->sa_timer_h),
 	     NTATAG_UA(agent->sa_is_a_uas),
 	     NTATAG_UDP_MTU(agent->sa_udp_mtu),
 	     NTATAG_USER_VIA(agent->sa_user_via),
