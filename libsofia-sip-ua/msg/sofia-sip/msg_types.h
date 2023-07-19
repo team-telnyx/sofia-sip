@@ -254,7 +254,6 @@ typedef enum {
 				 * new header is combined with old one. */
   msg_kind_apndlist,		/**< A complex list header. */
   msg_kind_prepend,		/**< New header is prepended */
-
   msg_kind_non_compact_append /**< Non-compact New header is appended */
 } msg_header_kind_t;
 
