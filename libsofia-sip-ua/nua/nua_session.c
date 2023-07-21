@@ -201,6 +201,11 @@ static void signal_call_state_change(nua_handle_t *nh,
 				      int status, char const *phrase,
 				      enum nua_callstate next_state);
 
+static void signal_call_state_change_with_msg(nua_handle_t *nh,
+				      nua_session_usage_t *ss, msg_t *msg,
+				      int status, char const *phrase,
+				      enum nua_callstate next_state);
+
 static int nua_invite_client_should_ack(nua_client_request_t const *cr);
 static int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags);
 static int nua_invite_client_complete(nua_client_request_t *cr);
@@ -3680,6 +3685,7 @@ int nua_update_server_report(nua_server_request_t *sr, tagi_t const *tags)
   nua_handle_t *nh = sr->sr_owner;
   nua_dialog_usage_t *du = sr->sr_usage;
   nua_session_usage_t *ss = nua_dialog_usage_private(du);
+  msg_t *msg = msg_ref_create(sr->sr_request.msg);
   int status = sr->sr_status; char const *phrase = sr->sr_phrase;
   int offer_recv_or_answer_sent = sr->sr_offer_recv || sr->sr_answer_sent;
   int retval;
@@ -3701,7 +3707,7 @@ int nua_update_server_report(nua_server_request_t *sr, tagi_t const *tags)
     if (state == nua_callstate_ready && status < 200)
       state = nua_callstate_received;
 
-    signal_call_state_change(nh, ss, status, phrase, state);
+    signal_call_state_change_with_msg(nh, ss, msg, status, phrase, state);
   }
 
   if (200 <= status && status < 300
@@ -4122,9 +4128,16 @@ int nua_bye_server_report(nua_server_request_t *sr, tagi_t const *tags)
  * @param oa_recv Received SDP
  * @param oa_sent Sent SDP
  */
-
 static void signal_call_state_change(nua_handle_t *nh,
 				     nua_session_usage_t *ss,
+				     int status, char const *phrase,
+				     enum nua_callstate next_state)
+{
+  signal_call_state_change_with_msg(nh, ss, NULL, status, phrase, next_state);
+}
+
+static void signal_call_state_change_with_msg(nua_handle_t *nh,
+				     nua_session_usage_t *ss, msg_t *msg,
 				     int status, char const *phrase,
 				     enum nua_callstate next_state)
 {
@@ -4225,7 +4238,7 @@ static void signal_call_state_change(nua_handle_t *nh,
     else
       oa_recv = NULL, oa_sent = NULL;
 
-    nua_stack_tevent(nh->nh_nua, nh, NULL, nua_i_state,
+    nua_stack_tevent(nh->nh_nua, nh, msg, nua_i_state,
 		     status, phrase,
 		     NUTAG_CALLSTATE(next_state),
 		     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
@@ -4242,14 +4255,14 @@ static void signal_call_state_change(nua_handle_t *nh,
   }
 
   if (next_state == nua_callstate_ready && ss_state <= nua_callstate_ready) {
-    nua_stack_tevent(nh->nh_nua, nh, NULL, nua_i_active, status, "Call active",
+    nua_stack_tevent(nh->nh_nua, nh, msg, nua_i_active, status, "Call active",
 		     NH_ACTIVE_MEDIA_TAGS(1, nh->nh_soa),
 		     /* NUTAG_SOA_SESSION(nh->nh_soa), */
 		     TAG_END());
   }
 
   else if (next_state == nua_callstate_terminated) {
-    nua_stack_event(nh->nh_nua, nh, NULL,
+    nua_stack_event(nh->nh_nua, nh, msg,
 		    nua_i_terminated, status, phrase,
 		    NULL);
   }
