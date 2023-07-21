@@ -29,7 +29,6 @@
 
 #define SHA1_HASH_SIZE 20
 static struct ws_globals_s ws_globals;
-ssize_t ws_global_payload_size_max = 0;
 
 #ifndef WSS_STANDALONE
 
@@ -715,16 +714,11 @@ int establish_logical_layer(wsh_t *wsh)
 	return 0;
 }
 
-void ws_set_global_payload_size_max(ssize_t bytes)
-{
-	ws_global_payload_size_max = bytes;
-}
 
 int ws_init(wsh_t *wsh, ws_socket_t sock, SSL_CTX *ssl_ctx, int close_sock, int block, int stay_open)
 {
 	memset(wsh, 0, sizeof(*wsh));
 
-	wsh->payload_size_max = ws_global_payload_size_max;
 	wsh->sock = sock;
 	wsh->block = block;
 	wsh->sanity = WS_INIT_SANITY;
@@ -786,6 +780,22 @@ void ws_destroy(wsh_t *wsh)
 		wsh->write_buffer_len = 0;
 	}
 
+	if (wsh->ssl) {
+		int code = 0;
+		do {
+			if (code == -1) {
+				int ssl_err = SSL_get_error(wsh->ssl, code);
+				wss_error(wsh, ssl_err, "ws_destroy: SSL_shutdown");
+				break;
+			}
+			code = SSL_shutdown(wsh->ssl);
+		// } while (code == -1 && SSL_get_error(wsh->ssl, code) == SSL_ERROR_WANT_READ);
+		} while (code == -1);
+
+		SSL_free(wsh->ssl);
+		wsh->ssl = NULL;
+	}
+
 	if (wsh->buffer) free(wsh->buffer);
 	if (wsh->bbuffer) free(wsh->bbuffer);
 
@@ -817,30 +827,6 @@ ssize_t ws_close(wsh_t *wsh, int16_t reason)
 	}
 
 	restore_socket(wsh->sock);
-
-	if (wsh->ssl) {
-		int code = 0;
-		int ssl_error = 0;
-		const char* buf = "0";
-
-		/* check if no fatal error occurs on connection */
-		code = SSL_write(wsh->ssl, buf, 1);
-		ssl_error = SSL_get_error(wsh->ssl, code);
-
-		if (ssl_error == SSL_ERROR_SYSCALL || ssl_error == SSL_ERROR_SSL) {
-			goto ssl_finish_it;
-		}
-
-		code = SSL_shutdown(wsh->ssl);
-		if (code == 0) {
-			/* need to make sure there is no more data to read */
-			ws_raw_read(wsh, wsh->buffer, 9, WS_BLOCK);
-		}
-
-ssl_finish_it:
-		SSL_free(wsh->ssl);
-		wsh->ssl = NULL;
-	}
 
 	if (wsh->close_sock && wsh->sock != ws_sock_invalid) {
 #ifndef WIN32
@@ -1014,12 +1000,6 @@ ssize_t ws_read_frame(wsh_t *wsh, ws_opcode_t *oc, uint8_t **data)
 				void *tmp;
 
 				wsh->bbuflen = need + blen + wsh->rplen;
-
-				if (wsh->payload_size_max && wsh->bbuflen > wsh->payload_size_max) {
-					/* size limit */
-					*oc = WSOC_CLOSE;
-					return ws_close(wsh, WS_NONE);
-				}
 
 				if ((tmp = realloc(wsh->bbuffer, wsh->bbuflen))) {
 					wsh->bbuffer = tmp;

@@ -87,7 +87,8 @@ extern char const STUN_DEBUG[]; /* dummy declaration for Doxygen */
 #endif
 
 #define STUN_ERROR(err, what) \
-  SU_DEBUG_5(("%s: %s: %s\n", __func__, #what, su_strerror(err)))
+  SU_DEBUG_5(("%s: %s: %s\n", __func__, #what, su_strerror(err))), \
+    -1								   \
 
 int stun_is_requested(tag_type_t tag, tag_value_t value, ...);
 

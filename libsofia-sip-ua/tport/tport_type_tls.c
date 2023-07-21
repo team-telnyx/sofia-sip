@@ -569,7 +569,7 @@ int tport_tls_accept(tport_primary_t *pri, int events)
 {
   tport_t *self;
   su_addrinfo_t ai[1];
-  su_sockaddr_t su[1] = { 0 };
+  su_sockaddr_t su[1];
   socklen_t sulen = sizeof su;
   su_socket_t s = INVALID_SOCKET, l = pri->pri_primary->tp_socket;
   char const *reason = "accept";

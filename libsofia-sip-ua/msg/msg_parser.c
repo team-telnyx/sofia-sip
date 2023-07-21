@@ -564,6 +564,7 @@ isize_t msg_recv_commit(msg_t *msg, usize_t n, int eos)
 msg_t *msg_next(msg_t *msg)
 {
   msg_t *next;
+  usize_t n;
 
   if (msg && msg->m_next) {
     next = msg->m_next;
@@ -571,7 +572,7 @@ msg_t *msg_next(msg_t *msg)
     return next;
   }
 
-  if (msg_buf_committed(msg)) {
+  if ((n = msg_buf_committed(msg))) {
     if (msg_buf_move(next = msg_create(msg->m_class, msg->m_oflags), msg)) {
       msg_addr_copy(next, msg);
       return next;
@@ -1915,8 +1916,6 @@ int msg_serialize(msg_t *msg, msg_pub_t *pub)
     return errno = EINVAL, -1;
   if (pub == NULL)
     pub = msg->m_object;
-
-  assert(pub);
 
   /* There must be a first line */
   if (pub->msg_request)

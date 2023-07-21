@@ -664,37 +664,6 @@ tag_typedef_t ntatag_progress = UINTTAG_TYPEDEF(progress);
  */
 tag_typedef_t ntatag_timer_c = UINTTAG_TYPEDEF(timer_c);
 
-/**@def NTATAG_TIMER_H(x)
- *
- * Value for timer H in milliseconds.
- *
- * Wait time for ACK receipt
- *
- * The default value for the timer H is based on T1x64 milliseconds (32
- * seconds).
- *
- * @par Used with
- *    nua_create(), nua_set_params(),
- *    nta_agent_create(), nta_agent_set_params()
- *
- * @par Parameter type
- *    unsigned int
- *
- * @par Values
- *    Value of SIP timer H in milliseconds. The default value is used
- *    instead if NTATAG_TIMER_H(0) is given.
- *
- * @par Default Value
- *   - 185000 (milliseconds, 3 minutes)
- *
- * @sa @RFC3261 sections 13.3.1.1, 16.7 and 16.8,
- * NTATAG_UA(1), NTATAG_TIMER_H(),
- * NTATAG_SIP_T1(), NTATAG_SIP_T1X4(), NTATAG_SIP_T2(), NTATAG_SIP_T4()
- *
- * @NEW_1_12_7.
- */
-tag_typedef_t ntatag_timer_h = UINTTAG_TYPEDEF(timer_h);
-
 /**@def NTATAG_GRAYLIST(x)
  *
  * Avoid failed servers.

@@ -209,12 +209,6 @@ NTA_DLL extern tag_typedef_t ntatag_timer_c;
 NTA_DLL extern tag_typedef_t ntatag_timer_c_ref;
 #define NTATAG_TIMER_C_REF(x) ntatag_timer_c_ref, tag_uint_vr(&(x))
 
-NTA_DLL extern tag_typedef_t ntatag_timer_h;
-#define NTATAG_TIMER_H(x)    ntatag_timer_h, tag_uint_v((x))
-
-NTA_DLL extern tag_typedef_t ntatag_timer_h_ref;
-#define NTATAG_TIMER_H_REF(x) ntatag_timer_h_ref, tag_uint_vr(&(x))
-
 NTA_DLL extern tag_typedef_t ntatag_graylist;
 #define NTATAG_GRAYLIST(x)  ntatag_graylist, tag_uint_v((x))
 

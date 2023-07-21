@@ -205,9 +205,6 @@ struct nta_agent_s
 				   Maximum interval between receiving
 				   provisional responses. */
 
-  unsigned sa_timer_h;		/**< SIP timer H.
-				   Maximum interval waiting for ACK receipt. */
-
   unsigned sa_graylist;		/**< Graylisting period */
   unsigned sa_blacklist;	/**< Blacklisting period */
 
@@ -266,7 +263,6 @@ struct nta_agent_s
   unsigned sa_auto_comp:1;	/**< Automatically create compartments */
   unsigned sa_in_timer:1;	/**< Set when executing timers */
   unsigned sa_use_timer_c:1;	/**< Application has set value for timer C */
-  unsigned sa_use_timer_h:1;	/**< Application has set value for timer H */
 
   unsigned :0;
 
@@ -896,7 +892,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
   ta_start(ta, tag, value);
 
   if ((agent = su_home_new(sizeof(*agent)))) {
-    unsigned timer_c = 0, timer_d = 32000, timer_h = 32000;
+    unsigned timer_c = 0, timer_d = 32000;
 
     agent->sa_root = root;
     agent->sa_callback = callback;
@@ -919,7 +915,6 @@ nta_agent_t *nta_agent_create(su_root_t *root,
     agent->sa_t4              = NTA_SIP_T4;
     agent->sa_t1x64 	      = 64 * NTA_SIP_T1;
     agent->sa_timer_c         = 185 * 1000;
-    agent->sa_timer_h         = 64 * NTA_SIP_T1;
     agent->sa_graylist        = 600;
     agent->sa_drop_prob       = 0;
     agent->sa_is_a_uas        = 0;
@@ -953,14 +948,9 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 
     agent->sa_in.re_t1 = &agent->sa_in.re_list;
 
-    if (agent->sa_use_timer_h)
-      timer_h = agent->sa_timer_h;
-    else
-      timer_h = agent->sa_t1x64;
-
     incoming_queue_init(agent->sa_in.proceeding, 0);
     incoming_queue_init(agent->sa_in.preliminary, agent->sa_t1x64); /* P1 */
-    incoming_queue_init(agent->sa_in.inv_completed, timer_h); /* H */
+    incoming_queue_init(agent->sa_in.inv_completed, agent->sa_t1x64); /* H */
     incoming_queue_init(agent->sa_in.inv_confirmed, agent->sa_t4); /* I */
     incoming_queue_init(agent->sa_in.completed, agent->sa_t1x64); /* J */
     incoming_queue_init(agent->sa_in.terminated, 0);
@@ -1113,15 +1103,6 @@ void nta_agent_destroy(nta_agent_t *agent)
 
     su_home_unref(agent->sa_home);
   }
-}
-
-void nta_agent_resolver_clean_cache(nta_agent_t *agent) 
-{
-#if HAVE_SOFIA_SRESOLV
-  if (agent && agent->sa_resolver) {
-    sres_resolver_clean_cache(agent->sa_resolver);
-  }
-#endif
 }
 
 /** Return agent context. */
@@ -1483,7 +1464,7 @@ int nta_agent_set_params(nta_agent_t *agent,
 static
 int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 {
-  int n, nC, nH, m;
+  int n, nC, m;
   unsigned bad_req_mask = agent->sa_bad_req_mask;
   unsigned bad_resp_mask = agent->sa_bad_resp_mask;
   usize_t  maxsize    = agent->sa_maxsize;
@@ -1497,7 +1478,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
   unsigned sip_t1x64  = agent->sa_t1x64;
   unsigned tls_orq_connect_timeout = agent->sa_tls_orq_connect_timeout;
   unsigned timer_c    = agent->sa_timer_c;
-  unsigned timer_h    = agent->sa_timer_h;
   unsigned timer_d    = 32000;
   unsigned graylist   = agent->sa_graylist;
   unsigned blacklist  = agent->sa_blacklist;
@@ -1590,11 +1570,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
 	       NTATAG_TIMER_C_REF(timer_c),
 	       TAG_END());
   n += nC;
-
-  nH = tl_gets(tags,
-	       NTATAG_TIMER_H_REF(timer_h),
-	       TAG_END());
-  n += nH;
 
   if (mclass != NONE)
     agent->sa_mclass = mclass ? mclass : sip_default_mclass();
@@ -1709,13 +1684,6 @@ int agent_set_params(nta_agent_t *agent, tagi_t *tags)
       timer_c = 185 * 1000;
     agent->sa_timer_c = timer_c;
     outgoing_queue_adjust(agent, agent->sa_out.inv_proceeding, timer_c);
-  }
-  if (nH == 1) {
-    agent->sa_use_timer_h = 1;
-    if (timer_h == 0)
-      timer_h = NTA_SIP_T1 * 64;
-    agent->sa_timer_h = timer_h;
-    incoming_queue_adjust(agent, agent->sa_in.inv_completed, timer_h);
   }
   if (timer_d < sip_t1x64)
     timer_d = sip_t1x64;
@@ -1879,7 +1847,6 @@ int agent_get_params(nta_agent_t *agent, tagi_t *tags)
 	     NTATAG_TAG_3261(1),
 	     NTATAG_TIMEOUT_408(agent->sa_timeout_408),
 	     NTATAG_TIMER_C(agent->sa_timer_c),
-	     NTATAG_TIMER_H(agent->sa_timer_h),
 	     NTATAG_UA(agent->sa_is_a_uas),
 	     NTATAG_UDP_MTU(agent->sa_udp_mtu),
 	     NTATAG_USER_VIA(agent->sa_user_via),
@@ -2501,7 +2468,7 @@ int agent_init_via(nta_agent_t *self, tport_t *primaries, int use_maddr)
 
   /* Set via field magic for the tports */
   for (tp = primaries; tp; tp = tport_next(tp)) {
-    assert(via->v_common && via->v_common->h_data == tp);
+    assert(via->v_common->h_data == tp);
     v = tport_magic(tp);
     tport_set_magic(tp, new_via);
     msg_header_free(self->sa_home, (void *)v);
@@ -3518,7 +3485,7 @@ void agent_recv_response(nta_agent_t *agent,
     return;
   }
 
-  if (sip->sip_cseq && sip->sip_cseq->cs_method == sip_method_invite
+  if (sip->sip_cseq->cs_method == sip_method_invite
       && 200 <= sip->sip_status->st_status
       && sip->sip_status->st_status < 300
       /* Exactly one Via header, belonging to us */
@@ -3956,7 +3923,7 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   msg_t *bmsg = NULL;
   sip_t *bsip;
   url_string_t const *ruri;
-  nta_outgoing_t *ack = NULL;
+  nta_outgoing_t *ack = NULL, *bye = NULL;
   sip_cseq_t *cseq;
   sip_request_t *rq;
   sip_route_t *route = NULL, *r, r0[1];
@@ -4027,9 +3994,9 @@ int nta_msg_ackbye(nta_agent_t *agent, msg_t *msg)
   else
     msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
 
-  if (!nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
+  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
 				   NTATAG_STATELESS(1),
-				   TAG_END()))
+				   TAG_END())))
     goto err;
 
   msg_destroy(msg);
@@ -5766,14 +5733,14 @@ void incoming_queue(incoming_queue_t *queue,
 		    nta_incoming_t *irq)
 {
   if (irq->irq_queue == queue) {
-    assert(queue && queue->q_timeout == 0);
+    assert(queue->q_timeout == 0);
     return;
   }
 
   if (incoming_is_queued(irq))
     incoming_remove(irq);
 
-  assert(queue && *queue->q_tail == NULL);
+  assert(*queue->q_tail == NULL);
 
   irq->irq_timeout = set_timeout(irq->irq_agent, queue->q_timeout);
 
@@ -6186,16 +6153,12 @@ static nta_incoming_t *incoming_find(nta_agent_t const *agent,
   sip_from_t const *from = sip->sip_from;
   sip_request_t *rq = sip->sip_request;
   incoming_htable_t const *iht = agent->sa_incoming;
-  hash_value_t hash;
+  hash_value_t hash = NTA_HASH(i, cseq->cs_seq);
   char const *magic_branch;
 
   nta_incoming_t **ii, *irq;
 
   int is_uas_ack = return_ack && agent->sa_is_a_uas;
-
-  assert(cseq);
-
-  hash = NTA_HASH(i, cseq->cs_seq);
 
   if (v->v_branch && su_casenmatch(v->v_branch, "z9hG4bK", 7))
     magic_branch = v->v_branch + 7;
