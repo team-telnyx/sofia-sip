@@ -1123,7 +1123,7 @@ int nua_count_handles(nua_t *nua)
 /** Get leg from dialog. */
 const nta_leg_t *nua_get_dialog_state_leg(nua_handle_t *nh)
 {
-	if (nh && nh->nh_ds)
+	if (nh)
 		return nh->nh_ds->ds_leg;
 	else
 		return NULL;
@@ -1132,7 +1132,7 @@ const nta_leg_t *nua_get_dialog_state_leg(nua_handle_t *nh)
 /** Get su_home_t from nua handle. */
 su_home_t *nua_handle_get_home(nua_handle_t *nh)
 {
-	if (nh && nh->nh_home)
+	if (nh)
 		return nh->nh_home;
 	else
 		return NULL;
@@ -1141,7 +1141,7 @@ su_home_t *nua_handle_get_home(nua_handle_t *nh)
 /** Get su_home_t from nua. */
 su_home_t *nua_get_home(nua_t *nua)
 {
-	if (nua && nua->nua_home)
+	if (nua)
 		return nua->nua_home;
 	else
 		return NULL;
@@ -1172,7 +1172,7 @@ unsigned nua_handle_is_destroyed(nua_handle_t *nh)
 
 void nua_handle_dialog_usage_set_refresh_range(nua_handle_t *nh,
 	unsigned min, unsigned max) {
-	if (nh && nh->nh_ds && nh->nh_ds->ds_usage) {
+	if (nh && nh->nh_ds->ds_usage) {
 		nua_dialog_usage_set_refresh_range(nh->nh_ds->ds_usage, min, max);
 	}
 }
