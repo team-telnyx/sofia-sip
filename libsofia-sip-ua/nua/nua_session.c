@@ -2437,7 +2437,9 @@ int nua_invite_server_respond(nua_server_request_t *sr, tagi_t const *tags)
       /* This is a re-INVITE without SDP - do not try to send offer in 200 */;
     else
       /* Generate offer */
-    if (soa_generate_offer(nh->nh_soa, nh->nh_prefs->nhp_always_regenerate_offer, NULL) < 0)
+    if (sr->sr_status == 180)
+      /* This is 180 Ringing - do not generate offer */;
+    else if (soa_generate_offer(nh->nh_soa, nh->nh_prefs->nhp_always_regenerate_offer, NULL) < 0)
       sr->sr_status = soa_error_as_sip_response(nh->nh_soa, &sr->sr_phrase);
     else
       offer = 1;
