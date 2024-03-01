@@ -89,7 +89,7 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  * @param root            Pointer to a root object
  * @param callback        Pointer to event callback function
  * @param magic           Pointer to callback context
- * @param tag, value, ... List of tagged parameters
+ * @param tag,ï¿½value, ... List of tagged parameters
  *
  * @retval !=NULL a pointer to a @nua stack object
  * @retval NULL upon an error
@@ -1202,10 +1202,10 @@ void nua_handle_set_no_strip_routes(nua_handle_t *nh)
 	nh->nh_no_strip_routes = 1;
 }
 
-void nua_handle_set_nh_use_compact(nua_handle_t *nh)
+void nua_handle_set_nh_use_compact(nua_handle_t *nh, int enable)
 {
 	if (!nh) return;
-	nh->nh_use_compact = 1;
+	nh->nh_use_compact = enable ? 1 : 0;
 }
 
 void nua_handle_set_offer_100rel(nua_handle_t *nh)
