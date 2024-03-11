@@ -482,7 +482,12 @@ int nua_handle_has_register(nua_handle_t const *nh)
 
 int nua_handle_use_compact(nua_handle_t const *nh)
 {
-  return nh ? nh->nh_use_compact : 0;
+  if (!nh) return 0;
+  
+  if (nh->nh_use_compact) return 1;
+  else if (nh->nh_no_compact) return -1;
+  
+  return 0;
 }
 
 int nua_handle_offer_100rel(nua_handle_t const *nh)
@@ -1202,10 +1207,16 @@ void nua_handle_set_no_strip_routes(nua_handle_t *nh)
 	nh->nh_no_strip_routes = 1;
 }
 
-void nua_handle_set_nh_use_compact(nua_handle_t *nh, int enable)
+void nua_handle_set_nh_use_compact(nua_handle_t *nh)
 {
 	if (!nh) return;
-	nh->nh_use_compact = enable ? 1 : 0;
+	nh->nh_use_compact = 1;
+}
+
+void nua_handle_set_nh_no_compact(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_no_compact = 1;
 }
 
 void nua_handle_set_offer_100rel(nua_handle_t *nh)
