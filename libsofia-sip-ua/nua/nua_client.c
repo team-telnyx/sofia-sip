@@ -613,7 +613,7 @@ msg_t *nua_client_request_template(nua_client_request_t *cr)
   nua_handle_t *nh = cr->cr_owner;
   nua_t *nua = nh->nh_nua;
   nua_dialog_state_t *ds = nh->nh_ds;
-  msg_t *msg = nta_msg_create(nua->nua_nta, nua_handle_use_compact(nh) ? MSG_FLG_COMPACT : 0);
+  msg_t *msg = nta_msg_create(nua->nua_nta, nua_handle_use_compact(nh));
   sip_t *sip = sip_object(msg);
 
   if (!sip)

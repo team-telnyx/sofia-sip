@@ -142,6 +142,7 @@ struct nua_handle_s
   unsigned        nh_has_notify:1;     /**< Has notifier */
   unsigned        nh_has_register:1;   /**< Has registration */
   unsigned        nh_use_compact:1;   /**< Use compact SIP headers */
+  unsigned        nh_no_compact:1;   /**< No compact SIP headers */
   unsigned        nh_offer_100rel:1;   /**< Offer 100rel */
   unsigned        nh_no_strip_routes:1;   /**< Do not strip route headers for mid dialog requests*/
   unsigned        nh_skip_send_bye:1;

@@ -89,7 +89,7 @@ su_log_t nua_log[] = { SU_LOG_INIT("nua", "NUA_DEBUG", SU_DEBUG) };
  * @param root            Pointer to a root object
  * @param callback        Pointer to event callback function
  * @param magic           Pointer to callback context
- * @param tag, value, ... List of tagged parameters
+ * @param tag,ï¿½value, ... List of tagged parameters
  *
  * @retval !=NULL a pointer to a @nua stack object
  * @retval NULL upon an error
@@ -482,7 +482,12 @@ int nua_handle_has_register(nua_handle_t const *nh)
 
 int nua_handle_use_compact(nua_handle_t const *nh)
 {
-  return nh ? nh->nh_use_compact : 0;
+  if (!nh) return 0;
+  
+  if (nh->nh_use_compact) return 1;
+  else if (nh->nh_no_compact) return -1;
+  
+  return 0;
 }
 
 int nua_handle_offer_100rel(nua_handle_t const *nh)
@@ -1206,6 +1211,12 @@ void nua_handle_set_nh_use_compact(nua_handle_t *nh)
 {
 	if (!nh) return;
 	nh->nh_use_compact = 1;
+}
+
+void nua_handle_set_nh_no_compact(nua_handle_t *nh)
+{
+	if (!nh) return;
+	nh->nh_no_compact = 1;
 }
 
 void nua_handle_set_offer_100rel(nua_handle_t *nh)

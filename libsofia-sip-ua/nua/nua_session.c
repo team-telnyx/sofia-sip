@@ -1304,7 +1304,7 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
 
   msg_destroy(msg);
 
-  msg = nta_msg_create(nh->nh_nua->nua_nta, nua_handle_use_compact(nh) ? MSG_FLG_COMPACT : 0);
+  msg = nta_msg_create(nh->nh_nua->nua_nta, nua_handle_use_compact(nh));
   sip = sip_object(msg);
   if (!msg)
     goto error;

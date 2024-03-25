@@ -3561,11 +3561,18 @@ void agent_recv_garbage(nta_agent_t *agent,
 msg_t *nta_msg_create(nta_agent_t *agent, int flags)
 {
   msg_t *msg;
+  int agent_flags = agent->sa_flags;
 
   if (agent == NULL)
     return su_seterrno(EINVAL), NULL;
 
-  msg = msg_create(agent->sa_mclass, agent->sa_flags | flags);
+  if (flags < 0) {
+    agent_flags &= ~(abs(flags));
+  } else {
+    agent_flags |= flags;
+  }
+
+  msg = msg_create(agent->sa_mclass, agent_flags);
 
   if (agent->sa_preload)
     su_home_preload(msg_home(msg), 1, agent->sa_preload);
