@@ -11465,6 +11465,11 @@ int reliable_recv(nta_reliable_t *rel, msg_t *msg, sip_t *sip, tport_t *tp)
       if (reliable_send(irq, rel, msg_ref_create(msg), sip) < 0) {
 	assert(!"send reliable response");
       }
+      /* If the reliable response contains session description,
+         wait again for the next prack message*/
+      if (rel->rel_precious) {
+        return 0;
+      }
     }
     else {
       /*
