@@ -2496,7 +2496,7 @@ END_TEST
 START_TEST(bye_4_1_6)
 {
   nua_handle_t *nh;
-  struct message *bye, *r486;
+  struct message *bye, *r487;
 
   S2_CASE("4.1.6", "Send BYE after INVITE has been received",
 	  "NUA receives INVITE, sends BYE at same time");
@@ -2515,11 +2515,11 @@ START_TEST(bye_4_1_6)
   fail_unless(s2_check_callstate(nua_callstate_received));
 
   do {
-    r486 = s2_sip_wait_for_response(0, SIP_METHOD_INVITE);
+    r487 = s2_sip_wait_for_response(0, SIP_METHOD_INVITE);
   }
-  while (r486->sip->sip_status->st_status < 200);
-  s2_sip_update_dialog(dialog, r486); /* send ACK */
-  fail_unless(r486->sip->sip_status->st_status == 486);
+  while (r487->sip->sip_status->st_status < 200);
+  s2_sip_update_dialog(dialog, r487); /* send ACK */
+  fail_unless(r487->sip->sip_status->st_status == 487);
 
   bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);
@@ -2534,7 +2534,7 @@ END_TEST
 START_TEST(bye_4_1_7)
 {
   nua_handle_t *nh;
-  struct message *bye, *r486;
+  struct message *bye, *r487;
 
   S2_CASE("4.1.7", "Send BYE after INVITE has been received",
 	  "NUA receives INVITE, sends BYE at same time");
@@ -2558,11 +2558,11 @@ START_TEST(bye_4_1_7)
   s2_sip_free_message(bye);
 
   do {
-    r486 = s2_sip_wait_for_response(0, SIP_METHOD_INVITE);
+    r487 = s2_sip_wait_for_response(0, SIP_METHOD_INVITE);
   }
-  while (r486->sip->sip_status->st_status < 200);
-  s2_sip_update_dialog(dialog, r486); /* send ACK */
-  fail_unless(r486->sip->sip_status->st_status == 486);
+  while (r487->sip->sip_status->st_status < 200);
+  s2_sip_update_dialog(dialog, r487); /* send ACK */
+  fail_unless(r487->sip->sip_status->st_status == 487);
 
   nua_handle_destroy(nh);
 }
@@ -2571,7 +2571,7 @@ END_TEST
 START_TEST(bye_4_1_8)
 {
   nua_handle_t *nh;
-  struct message *bye, *r486;
+  struct message *bye, *r487;
 
   S2_CASE("4.1.8", "BYE followed by response to INVITE",
 	  "NUA receives INVITE, sends BYE at same time");
@@ -2588,14 +2588,14 @@ START_TEST(bye_4_1_8)
   fail_unless_event(nua_i_invite, 100);
   fail_unless(s2_check_callstate(nua_callstate_received));
 
-  nua_respond(nh, SIP_486_BUSY_HERE, TAG_END());
+  nua_respond(nh, SIP_487_REQUEST_TERMINATED, TAG_END());
 
   do {
-    r486 = s2_sip_wait_for_response(0, SIP_METHOD_INVITE);
+    r487 = s2_sip_wait_for_response(0, SIP_METHOD_INVITE);
   }
-  while (r486->sip->sip_status->st_status < 200);
-  s2_sip_update_dialog(dialog, r486); /* send ACK */
-  fail_unless(r486->sip->sip_status->st_status == 486);
+  while (r487->sip->sip_status->st_status < 200);
+  s2_sip_update_dialog(dialog, r487); /* send ACK */
+  fail_unless(r487->sip->sip_status->st_status == 487);
 
   bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
   fail_if(!bye);

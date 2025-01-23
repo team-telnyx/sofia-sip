@@ -3863,7 +3863,7 @@ static int nua_bye_client_request(nua_client_request_t *cr,
     for (sr = du->du_dialog->ds_sr; sr; sr = sr->sr_next) {
       if (sr->sr_usage == du && nua_server_request_is_pending(sr) &&
 	  sr->sr_method != sip_method_bye) {
-	sr_status(sr, SIP_486_BUSY_HERE);
+	sr_status(sr, SIP_487_REQUEST_TERMINATED);
 	nua_server_respond(sr, 0);
       }
     }
