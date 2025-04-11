@@ -62,7 +62,7 @@ typedef struct nta_incoming_s   nta_incoming_t;
 
 typedef int (*nta_peek_datagram_request_func)(const msg_t *msg, const sip_t *sip);
 
-typedef void (*nta_outgoing_invite_retransmit_func)();
+typedef void (*nta_outgoing_invite_retransmit_func)(void);
 
 #ifndef NTA_AGENT_MAGIC_T
 /** Default type of application context for NTA agents.
