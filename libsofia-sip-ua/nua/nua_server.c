@@ -263,8 +263,13 @@ int nua_stack_process_request(nua_handle_t *nh,
 
   if (sr->sr_status <= 100) {
 	  	  SR_STATUS1(sr, SIP_100_TRYING);
+    /* Telnyx patch: RFC 3261 Section 8.2.6.1 states "UASs SHOULD NOT issue a
+     * provisional response for a non-INVITE request." The Timestamp header
+     * only requires copying it IF a 100 Trying is sent, not that we MUST
+     * send 100 Trying when Timestamp is present. Only auto-send 100 Trying
+     * for Timestamp on INVITE requests. */
     if ((method == sip_method_invite && nh->nh_prefs->nhp_auto_invite_100) ||
-        sip->sip_timestamp) {
+        (method == sip_method_invite && sip->sip_timestamp)) {
 		nta_incoming_treply(irq, SIP_100_TRYING,
 							SIPTAG_USER_AGENT_STR(user_agent),
 							TAG_END());
