@@ -10919,8 +10919,23 @@ int outgoing_query_aaaa(nta_outgoing_t *orq, struct sipdns_query *sq)
               answers ? " (cached)" : ""));
 
   if (answers) {
-    outgoing_answer_aaaa(orq, NULL, answers);
-    return 0;
+    /* Validate cached answers: if all entries are negative (r_status != 0
+     * or wrong type), discard them and send a fresh query instead of
+     * triggering a spurious 503 DNS Error. See outgoing_query_a().
+     */
+    int i, valid;
+    valid = 0;
+    for (i = 0; answers[i]; i++) {
+      sres_aaaa_record_t const *aaaa = answers[i]->sr_aaaa;
+      if (aaaa->aaaa_record->r_status == 0 &&
+          aaaa->aaaa_record->r_type == sres_type_aaaa)
+        valid++;
+    }
+    if (valid) {
+      outgoing_answer_aaaa(orq, NULL, answers);
+      return 0;
+    }
+    sres_free_answers(orq->orq_agent->sa_resolver, answers);
   }
 
   sr->sr_query = sres_query(orq->orq_agent->sa_resolver,
@@ -11005,8 +11020,25 @@ int outgoing_query_a(nta_outgoing_t *orq, struct sipdns_query *sq)
 	      answers ? " (cached)" : ""));
 
   if (answers) {
-    outgoing_answer_a(orq, NULL, answers);
-    return 0;
+    /* Validate cached answers: if all entries are negative (r_status != 0
+     * or wrong type), discard them and send a fresh query instead of
+     * triggering a spurious 503 DNS Error. Negative cache entries from
+     * NXDOMAIN/SERVFAIL for one query (e.g. SRV-only host) can pollute
+     * the cache and prevent resolution of valid A records learned via SRV.
+     */
+    int i, valid;
+    valid = 0;
+    for (i = 0; answers[i]; i++) {
+      sres_a_record_t const *a = answers[i]->sr_a;
+      if (a->a_record->r_status == 0 &&
+          a->a_record->r_type == sres_type_a)
+        valid++;
+    }
+    if (valid) {
+      outgoing_answer_a(orq, NULL, answers);
+      return 0;
+    }
+    sres_free_answers(orq->orq_agent->sa_resolver, answers);
   }
 
   sr->sr_query = sres_query(orq->orq_agent->sa_resolver,
