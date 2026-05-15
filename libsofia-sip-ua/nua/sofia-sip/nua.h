@@ -268,6 +268,10 @@ SOFIAPUBFUN int nua_handle_skip_send_bye(nua_handle_t const *nh);
 
 SOFIAPUBFUN void nua_handle_skip_send_bye_set(nua_handle_t *nh, int val);
 
+SOFIAPUBFUN int nua_handle_skip_send_register(nua_handle_t const *nh);
+
+SOFIAPUBFUN void nua_handle_skip_send_register_set(nua_handle_t *nh, int val);
+
 /** Get the remote address (From/To header) of operation handle */
 SOFIAPUBFUN sip_to_t const *nua_handle_remote(nua_handle_t const *nh);
 
