@@ -146,6 +146,7 @@ struct nua_handle_s
   unsigned        nh_offer_100rel:1;   /**< Offer 100rel */
   unsigned        nh_no_strip_routes:1;   /**< Do not strip route headers for mid dialog requests*/
   unsigned        nh_skip_send_bye:1;
+  unsigned        nh_skip_send_register:1; /**< Drop REGISTER refresh + shutdown UNREGISTER at wire-send */
 
   /* Call status */
   unsigned        nh_active_call:1;
