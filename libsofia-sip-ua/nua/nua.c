@@ -505,6 +505,16 @@ void nua_handle_skip_send_bye_set(nua_handle_t *nh, int val)
 	nh->nh_skip_send_bye = val;
 }
 
+int nua_handle_skip_send_register(nua_handle_t const *nh)
+{
+  return nh ? nh->nh_skip_send_register : 0;
+}
+
+void nua_handle_skip_send_register_set(nua_handle_t *nh, int val)
+{
+	nh->nh_skip_send_register = val;
+}
+
 /** Check if operation handle has an active call
  *
  * @param nh          Pointer to operation handle

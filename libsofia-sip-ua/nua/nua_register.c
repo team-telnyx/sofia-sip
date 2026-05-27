@@ -720,6 +720,21 @@ int nua_register_client_request(nua_client_request_t *cr,
 
   (void)nh;
 
+  /* Skip wire emission for REGISTER-method requests when
+   * nua_handle_skip_send_register is set. Covers the initial REGISTER,
+   * scheduled refresh REGISTERs (nua_register_usage_refresh), and the
+   * shutdown UNREGISTER (nua_register_usage_shutdown) — all three go
+   * through this crm_send. Mirrors the BYE skip pattern in
+   * nua_session.c. The dialog usage and client request are torn down
+   * locally via the synthesized 481 response.
+   *
+   * Scope: REGISTER-method only. The flag does NOT affect outbound
+   * keepalive OPTIONS (sent independently by outbound.c via
+   * nta_outgoing_mcreate). Intended use case is shared-AOR teardown
+   * where another node still holds the binding. */
+  if (nua_handle_skip_send_register(nh))
+    return nua_client_return(cr, SIP_481_NO_TRANSACTION, msg);
+
   /* Explicit empty (NULL) contact - used for CPL store/remove? */
   if (!contacts && cr->cr_has_contact)
     return nua_base_client_request(cr, msg, sip, tags);
