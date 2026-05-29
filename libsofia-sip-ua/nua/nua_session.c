@@ -1259,6 +1259,7 @@ static
 int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
 {
   nua_handle_t *nh = cr->cr_owner;
+  nua_handle_t *intercept_nh = NULL;
   nua_dialog_state_t *ds = nh->nh_ds;
   nua_session_usage_t *ss = nua_dialog_usage_private(cr->cr_usage);
 
@@ -1269,6 +1270,7 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
   sip_proxy_authorization_t *pa;
   sip_cseq_t *cseq;
   int proxy_is_set;
+  int intercept_query_results_is_set;
   url_string_t *proxy;
   nta_outgoing_t *ack;
   int status = 200;
@@ -1389,10 +1391,16 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
 
     proxy_is_set = NH_PISSET(nh, proxy);
     proxy = NH_PGET(nh, proxy);
+    intercept_query_results_is_set = NH_PGET(nh, intercept_query_results);
+    if (intercept_query_results_is_set) {
+        intercept_nh = nua_handle_ref(nh);
+    }
 
     if ((ack = nta_outgoing_mcreate(nh->nh_nua->nua_nta, NULL, NULL, NULL,
 				    msg,
 				    NTATAG_ACK_BRANCH(invite_branch),
+				    TAG_IF(intercept_query_results_is_set,
+					   NTATAG_INTERCEPT_QUERY_RESULTS(intercept_nh)),
 				    TAG_IF(proxy_is_set,
 					   NTATAG_DEFAULT_PROXY(proxy)),
 				    SIPTAG_END(),
@@ -1408,6 +1416,11 @@ int nua_invite_client_ack(nua_client_request_t *cr, tagi_t const *tags)
     else if (!reason) {
       status = 900;		/* Cannot send ACK */
       reason = "SIP;cause=500;text=\"Internal Error\"";
+    }
+
+    if (!ack && intercept_nh) {
+        /* Unref in case of outgoing create error */
+        nua_handle_unref(intercept_nh);
     }
 
     if (ss && reason)
