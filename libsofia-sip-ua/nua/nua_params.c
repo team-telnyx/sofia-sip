@@ -279,6 +279,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
  *   NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT() \n
+ *   NUTAG_INTERCEPT_QUERY_RESULTS() \n
  *   NUTAG_CALLEE_CAPS() \n
  *   NUTAG_DETECT_NETWORK_UPDATES() \n
  *   NUTAG_EARLY_ANSWER() \n
@@ -404,6 +405,7 @@ int nua_stack_init_instance(nua_handle_t *nh, tagi_t const *tags)
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
  *   NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT() \n
+ *   NUTAG_INTERCEPT_QUERY_RESULTS() \n
  *   NUTAG_CALLEE_CAPS() \n
  *   NUTAG_EARLY_ANSWER() \n
  *   NUTAG_EARLY_MEDIA() \n
@@ -715,6 +717,9 @@ static int nhp_set_tags(su_home_t *home,
     }
     else if (tag == nutag_call_tls_orq_connect_timeout) {
       NHP_SET(nhp, call_tls_orq_connect_timeout, (uint32_t)value);
+    }
+    else if (tag == nutag_intercept_query_results) {
+      NHP_SET(nhp, intercept_query_results, value != 0);
     }
     /* NUTAG_MAX_SUBSCRIPTIONS(max_subscriptions) */
     else if (tag == nutag_max_subscriptions) {
@@ -1511,6 +1516,7 @@ int nua_stack_set_smime_params(nua_t *nua, tagi_t const *tags)
  *   NUTAG_AUTOALERT() \n
  *   NUTAG_AUTOANSWER() \n
  *   NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT() \n
+ *   NUTAG_INTERCEPT_QUERY_RESULTS() \n
  *   NUTAG_CALLEE_CAPS() \n
  *   NUTAG_DETECT_NETWORK_UPDATES() \n
  *   NUTAG_EARLY_ANSWER() \n
@@ -1686,6 +1692,7 @@ int nua_stack_get_params(nua_t *nua, nua_handle_t *nh, nua_event_t e,
 
      TIF(NUTAG_RETRY_COUNT, retry_count),
      TIF(NUTAG_CALL_TLS_ORQ_CONNECT_TIMEOUT, call_tls_orq_connect_timeout),
+     TIF(NUTAG_INTERCEPT_QUERY_RESULTS, intercept_query_results),
      TIF(NUTAG_MAX_SUBSCRIPTIONS, max_subscriptions),
 
      TIF(NUTAG_SOA_NAME, soa_name),

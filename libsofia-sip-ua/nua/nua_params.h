@@ -61,6 +61,7 @@ struct nua_handle_preferences
   unsigned         nhp_retry_count;	/**< times to retry a request */
   unsigned         nhp_max_subscriptions;
   uint32_t         nhp_call_tls_orq_connect_timeout;
+  unsigned         nhp_intercept_query_results;
 
   /* Session-related preferences */
   char const      *nhp_soa_name;
@@ -229,6 +230,7 @@ struct nua_handle_preferences
     unsigned nhb_always_regenerate_offer:1;
     unsigned nhb_tagged_on_prack:1;
     unsigned nhb_call_tls_orq_connect_timeout:1;
+    unsigned nhb_intercept_query_results:1;
     unsigned :0;
   } set_bits;
     unsigned set_unsigned[2];
