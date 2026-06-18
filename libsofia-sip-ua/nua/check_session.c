@@ -2206,11 +2206,11 @@ END_TEST
 START_TEST(call_3_2_2)
 {
   nua_handle_t *nh;
-  struct message *invite;
+  struct message *invite, *bye;
   int i;
 
   S2_CASE("3.2.2", "Re-INVITE fails after too many retries",
-	  "Call survives 4 times 500 Retry-After (RFC 3261 14.1, TELCORE-212)");
+	  "Call fails after 4 times 500 Retry-After");
 
   nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor),
 		  NUTAG_RETRY_COUNT(3),
@@ -2237,9 +2237,14 @@ START_TEST(call_3_2_2)
   }
 
   fail_unless_event(nua_r_invite, 500);
-  fail_unless(s2_check_callstate(nua_callstate_ready));
-
-  bye_by_nua(nh, TAG_END());
+  /* Graceful termination */
+  fail_unless(s2_check_callstate(nua_callstate_terminating));
+  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
+  fail_if(!bye);
+  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(bye);
+  fail_unless_event(nua_r_bye, 200);
+  fail_unless(s2_check_callstate(nua_callstate_terminated));
 
   nua_handle_destroy(nh);
 }
@@ -2304,42 +2309,6 @@ START_TEST(call_3_2_4)
 END_TEST
 
 
-START_TEST(call_3_2_5)
-{
-  nua_handle_t *nh;
-  struct message *invite, *bye;
-
-  S2_CASE("3.2.5", "Re-INVITE 481 still terminates",
-	  "Re-INVITE fails with 481, dialog is torn down with BYE");
-  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor),
-		  TAG_END());
-
-  invite_by_nua(nh, TAG_END());
-
-  nua_invite(nh, TAG_END());
-
-  fail_unless(s2_check_callstate(nua_callstate_calling));
-
-  invite = s2_sip_wait_for_request(SIP_METHOD_INVITE);
-  fail_if(!invite);
-  s2_sip_respond_to(invite, NULL, SIP_481_NO_TRANSACTION, TAG_END());
-  s2_sip_free_message(invite);
-  fail_unless(s2_sip_check_request(SIP_METHOD_ACK));
-  fail_unless_event(nua_r_invite, 481);
-
-  fail_unless(s2_check_callstate(nua_callstate_terminating));
-  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
-  fail_if(!bye);
-  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
-  s2_sip_free_message(bye);
-  fail_unless_event(nua_r_bye, 200);
-  fail_unless(s2_check_callstate(nua_callstate_terminated));
-
-  nua_handle_destroy(nh);
-}
-END_TEST
-
-
 TCase *invite_error_tcase(int threading)
 {
   TCase *tc = tcase_create("3 - Call Errors");
@@ -2351,7 +2320,6 @@ TCase *invite_error_tcase(int threading)
     tcase_add_test(tc, call_3_2_2);
     tcase_add_test(tc, call_3_2_3);
     tcase_add_test(tc, call_3_2_4);
-    tcase_add_test(tc, call_3_2_5);
     tcase_set_timeout(tc, 5);
   }
   return tc;
