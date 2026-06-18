@@ -1128,7 +1128,7 @@ static int nua_invite_client_report(nua_client_request_t *cr,
     next_state = nua_callstate_terminated;
   }
   else if (cr->cr_graceful && ss->ss_state >= nua_callstate_completing) {
-    if (!cr->cr_initial && status != 408 && status != 481) {
+    if (!cr->cr_initial && status == 500) {
       cr->cr_graceful = 0;
       next_state = nua_callstate_init;
     }
