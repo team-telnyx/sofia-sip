@@ -630,6 +630,13 @@ SOFIAPUBVAR tag_typedef_t nutag_always_regenerate_offer;
   nutag_always_regenerate_offer_ref, tag_bool_vr(&(x))
 SOFIAPUBVAR tag_typedef_t nutag_always_regenerate_offer_ref;
 
+#define NUTAG_RELIABLE_180_NOSDP(x) \
+  nutag_reliable_180_nosdp, tag_bool_v(x)
+SOFIAPUBVAR tag_typedef_t nutag_reliable_180_nosdp;
+#define NUTAG_RELIABLE_180_NOSDP_REF(x) \
+  nutag_reliable_180_nosdp_ref, tag_bool_vr(&(x))
+SOFIAPUBVAR tag_typedef_t nutag_reliable_180_nosdp_ref;
+
 #define NUTAG_TAGGED_ON_PRACK(x) \
   nutag_tagged_on_prack, tag_bool_v(x)
 SOFIAPUBVAR tag_typedef_t nutag_tagged_on_prack;

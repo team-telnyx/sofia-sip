@@ -2850,6 +2850,8 @@ tag_typedef_t nutag_always_regenerate_offer = INTTAG_TYPEDEF(always_regenerate_o
  */
 tag_typedef_t nutag_tagged_on_prack = INTTAG_TYPEDEF(tagged_on_prack);
 
+tag_typedef_t nutag_reliable_180_nosdp = INTTAG_TYPEDEF(reliable_180_nosdp);
+
 /**@def NUTAG_TAGGED_ON_PRACK(x)
  * Reference tag for NUTAG_TAGGED_ON_PRACK().
  */
