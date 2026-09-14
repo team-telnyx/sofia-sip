@@ -179,6 +179,8 @@ int nua_stack_set_defaults(nua_handle_t *nh,
   
   NHP_SET(nhp, tagged_on_prack, 0);
 
+  NHP_SET(nhp, reliable_180_nosdp, 0);
+
   NHP_SET(nhp, appl_method,
 	  sip_allow_make(home, "INVITE, REGISTER, PUBLISH, SUBSCRIBE"));
 
@@ -1035,6 +1037,10 @@ static int nhp_set_tags(su_home_t *home,
     }
     else if (tag == nutag_tagged_on_prack) {
       NHP_SET(nhp, tagged_on_prack, value != 0);
+    }
+    /* NUTAG_RELIABLE_180_NOSDP() */
+    else if (tag == nutag_reliable_180_nosdp) {
+      NHP_SET(nhp, reliable_180_nosdp, value != 0);
     }
     /* NUTAG_DETECT_NETWORK_UPDATES(detect_network_updates) */
     else if (ngp && tag == nutag_detect_network_updates) {

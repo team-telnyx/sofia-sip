@@ -125,6 +125,9 @@ struct nua_handle_preferences
   /** Enable/Disable tagged (early dialog) for outgoing PRACK */
   unsigned         nhp_tagged_on_prack:1;
 
+  /** Send a 180 reliably even when there is no SDP to put in it */
+  unsigned         nhp_reliable_180_nosdp:1;
+
   unsigned:0;
 
   /* Default lifetime for implicit subscriptions created by REFER */
@@ -228,6 +231,7 @@ struct nua_handle_preferences
     unsigned nhb_auto_invite_100:1;
     unsigned nhb_always_regenerate_offer:1;
     unsigned nhb_tagged_on_prack:1;
+    unsigned nhb_reliable_180_nosdp:1;
     unsigned nhb_call_tls_orq_connect_timeout:1;
     unsigned :0;
   } set_bits;
