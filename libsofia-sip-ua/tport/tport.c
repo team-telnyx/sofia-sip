@@ -62,6 +62,14 @@ typedef struct tport_nat_s tport_nat_t;
 #include <errno.h>
 #include <limits.h>
 
+#if HAVE_WIN32
+#include <io.h>
+#define access(_filename, _mode) _access(_filename, _mode)
+#define R_OK (04)
+#else
+#include <unistd.h>
+#endif
+
 #ifndef IPPROTO_SCTP
 #define IPPROTO_SCTP (132)
 #endif
@@ -71,6 +79,8 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/rbtree.h>
 
 #include "tport_internal.h"
+#include "tport_tls.h"
+#include "tport_ws.h"
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -91,6 +101,11 @@ static char const __func__[] = "tport";
   (tp)->tp_master->mr_tpac->tpac_address((tp)->tp_master->mr_stack, (tp))
 
 #define TP_STACK   tp_master->mr_stack
+
+/* Upper bound on how much of a received message is reassembled for HEP
+ * capture. Large or heavily fragmented messages may be captured truncated;
+ * raise this if that happens. */
+#define TPORT_CAPT_IOVMAX 80
 
 /* Define macros for rbtree implementation */
 #define TP_LEFT(tp) ((tp)->tp_left)
@@ -278,6 +293,59 @@ int tport_has_tls(tport_t const *self)
 int tport_is_verified(tport_t const *self)
 {
   return tport_has_tls(self) && self->tp_is_connected && self->tp_verified;
+}
+
+/** Reload TLS certificates on all TLS primary transports. */
+int tport_reload_tls(tport_t *self, char const *cert_dir)
+{
+  su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
+  tls_issues_t ti = {0};
+  tport_t *tp;
+  int reloaded = 0;
+
+  if (!self || !cert_dir)
+    return -1;
+
+  su_home_auto(autohome, sizeof autohome);
+
+  ti.key = su_sprintf(autohome, "%s/%s", cert_dir, "agent.pem");
+  if (access(ti.key, R_OK) != 0)
+    ti.key = su_sprintf(autohome, "%s/%s", cert_dir, "tls.pem");
+  ti.cert = ti.key;
+  ti.CAfile = su_sprintf(autohome, "%s/%s", cert_dir, "cafile.pem");
+  if (access(ti.CAfile, R_OK) != 0)
+    ti.CAfile = su_sprintf(autohome, "%s/%s", cert_dir, "tls.pem");
+  ti.CApath = su_strdup(autohome, cert_dir);
+  ti.randFile = su_sprintf(autohome, "%s/%s", cert_dir, "tls_seed.dat");
+  ti.configured = 1;
+
+  for (tp = tport_primaries(self); tp; tp = tport_next(tp)) {
+    /* Reload WSS transport certificates */
+    if (tp->tp_protoname && strcasecmp(tp->tp_protoname, "wss") == 0) {
+      tport_ws_primary_t *wspri = (tport_ws_primary_t *)tp->tp_pri;
+      if (wspri->ssl_ctx) {
+        SSL_CTX *new_ctx = tport_wss_create_ssl_ctx(cert_dir);
+        if (new_ctx) {
+          SSL_CTX_free(wspri->ssl_ctx);
+          wspri->ssl_ctx = new_ctx;
+          reloaded++;
+          SU_DEBUG_3(("tport_reload_tls: WSS certificates reloaded successfully\n" VA_NONE));
+        } else {
+          SU_DEBUG_1(("tport_reload_tls: WSS certificate reload failed\n" VA_NONE));
+        }
+      }
+    } else if (tport_has_tls(tp)) {
+      tport_tls_primary_t *tlspri = (tport_tls_primary_t *)tp->tp_pri;
+      if (tlspri->tlspri_master) {
+        if (tls_reload_cert(tlspri->tlspri_master, &ti) == 0)
+          reloaded++;
+      }
+    }
+  }
+
+  su_home_deinit(autohome);
+
+  return reloaded;
 }
 
 /** Return true if transport is being updated. */
@@ -2680,8 +2748,17 @@ msg_t *tport_msg_alloc(tport_t const *self, usize_t size)
 {
   if (self) {
     tport_master_t *mr = self->tp_master;
-    msg_t *msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, mr->mr_log,
-					 NULL, size, self, NULL);
+    int flags = mr->mr_log;
+    msg_t *msg;
+
+    /* Capture rebuilds the payload via msg_iovec(), which needs the
+     * header wire image that only MSG_DO_EXTRACT_COPY preserves. */
+    if (mr->mr_capt_sock) {
+      flags |= MSG_DO_EXTRACT_COPY;
+    }
+
+    msg = mr->mr_tpac->tpac_alloc(mr->mr_stack, flags,
+              NULL, size, self, NULL);
     if (msg) {
       su_addrinfo_t *mai = msg_addrinfo(msg);
       su_addrinfo_t const *tai = self->tp_addrinfo;
@@ -2993,6 +3070,8 @@ static void tport_parse(tport_t *self, int complete, su_time_t now)
 
   if (self->tp_rlogged != msg)
     self->tp_rlogged = NULL;
+  if (self->tp_rcaptured != msg)
+    self->tp_rcaptured = NULL;
 
   self->tp_msg = msg;
 }
@@ -3050,6 +3129,26 @@ void tport_deliver(tport_t *self,
     char const *via = "recv";
     tport_log_msg(self, msg, via, "from", now);
     self->tp_rlogged = msg;
+  }
+
+  /* Capture needs the wire image MSG_FLG_EXTRACT_COPY preserves; messages
+   * allocated before capture was enabled lack it, so skip them. */
+  if (!error && self->tp_master->mr_capt_sock && msg != self->tp_rcaptured
+      && msg_get_flags(msg, MSG_FLG_EXTRACT_COPY)) {
+    msg_iovec_t iov[TPORT_CAPT_IOVMAX];
+    size_t i, iovlen = msg_iovec(msg, iov, TPORT_CAPT_IOVMAX);
+    size_t bytes = 0;
+
+    for (i = 0; i < iovlen && i < TPORT_CAPT_IOVMAX; i++) {
+      bytes += iov[i].mv_len;
+    }
+
+    if (bytes > 0) {
+      tport_capt_msg(self, msg, bytes, iov,
+                     iovlen < TPORT_CAPT_IOVMAX ? iovlen : TPORT_CAPT_IOVMAX,
+                     "recv");
+    }
+    self->tp_rcaptured = msg;
   }
 
   SU_DEBUG_7(("%s(%p): %smsg %p ("MOD_ZU" bytes)"
