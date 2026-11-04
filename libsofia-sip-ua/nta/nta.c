@@ -612,14 +612,6 @@ ntatag_delay_sending_ref, tag_bool_vr(&(x))
 extern tag_typedef_t ntatag_delay_sending;
 extern tag_typedef_t ntatag_delay_sending_ref;
 
-/* Intercept query results */
-#define NTATAG_INTERCEPT_QUERY_RESULTS(x) ntatag_intercept_query_results, tag_ptr_v((x))
-#define NTATAG_INTERCEPT_QUERY_RESULTS_REF(x) \
-ntatag_intercept_query_results_ref, tag_ptr_vr(&(x))
-
-extern tag_typedef_t ntatag_intercept_query_results;
-extern tag_typedef_t ntatag_intercept_query_results_ref;
-
 /* Allow sending incomplete responses */
 #define NTATAG_INCOMPLETE(x) ntatag_incomplete, tag_bool_v((x))
 #define NTATAG_INCOMPLETE_REF(x) \
