@@ -79,8 +79,12 @@ typedef struct tport_nat_s tport_nat_t;
 #include <sofia-sip/rbtree.h>
 
 #include "tport_internal.h"
+#if HAVE_TLS
 #include "tport_tls.h"
+#endif
+#if HAVE_SOFIA_NTH
 #include "tport_ws.h"
+#endif
 
 #if HAVE_FUNC
 #elif HAVE_FUNCTION
@@ -295,17 +299,25 @@ int tport_is_verified(tport_t const *self)
   return tport_has_tls(self) && self->tp_is_connected && self->tp_verified;
 }
 
-/** Reload TLS certificates on all TLS primary transports. */
+/** Reload TLS certificates on all TLS primary transports.
+ *
+ * Returns the number of primary transports whose certificates were
+ * reloaded, or -1 on invalid arguments. A transport whose new
+ * certificates cannot be loaded keeps its current ones.
+ */
 int tport_reload_tls(tport_t *self, char const *cert_dir)
 {
-  su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
-  tls_issues_t ti = {0};
   tport_t *tp;
   int reloaded = 0;
+#if HAVE_TLS
+  su_home_t autohome[SU_HOME_AUTO_SIZE(1024)];
+  tls_issues_t ti = {0};
+#endif
 
   if (!self || !cert_dir)
     return -1;
 
+#if HAVE_TLS
   su_home_auto(autohome, sizeof autohome);
 
   ti.key = su_sprintf(autohome, "%s/%s", cert_dir, "agent.pem");
@@ -318,8 +330,10 @@ int tport_reload_tls(tport_t *self, char const *cert_dir)
   ti.CApath = su_strdup(autohome, cert_dir);
   ti.randFile = su_sprintf(autohome, "%s/%s", cert_dir, "tls_seed.dat");
   ti.configured = 1;
+#endif
 
   for (tp = tport_primaries(self); tp; tp = tport_next(tp)) {
+#if HAVE_SOFIA_NTH
     /* Reload WSS transport certificates */
     if (tp->tp_protoname && strcasecmp(tp->tp_protoname, "wss") == 0) {
       tport_ws_primary_t *wspri = (tport_ws_primary_t *)tp->tp_pri;
@@ -334,16 +348,23 @@ int tport_reload_tls(tport_t *self, char const *cert_dir)
           SU_DEBUG_1(("tport_reload_tls: WSS certificate reload failed\n" VA_NONE));
         }
       }
-    } else if (tport_has_tls(tp)) {
+      continue;
+    }
+#endif
+#if HAVE_TLS
+    if (tport_has_tls(tp)) {
       tport_tls_primary_t *tlspri = (tport_tls_primary_t *)tp->tp_pri;
       if (tlspri->tlspri_master) {
         if (tls_reload_cert(tlspri->tlspri_master, &ti) == 0)
           reloaded++;
       }
     }
+#endif
   }
 
+#if HAVE_TLS
   su_home_deinit(autohome);
+#endif
 
   return reloaded;
 }
