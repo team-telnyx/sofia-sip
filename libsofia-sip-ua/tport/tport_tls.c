@@ -129,10 +129,13 @@ struct tls_s {
   /* Host names */
   su_strlst_t *subjects;
 
-  /* tls_issues_t scalars needed to recreate SSL_CTX on cert reload */
+  /* tls_issues_t settings needed to recreate SSL_CTX on cert reload */
   int version;
   unsigned timeout;
   unsigned verify_depth;
+  int enable_dh;
+  char *ciphers;
+  char *passphrase;
 };
 
 enum { tls_buffer_size = 16384 };
@@ -489,6 +492,9 @@ int tls_init_context(tls_t *tls, tls_issues_t const *ti)
   tls->version      = ti->version;
   tls->timeout      = ti->timeout;
   tls->verify_depth = ti->verify_depth;
+  tls->enable_dh    = ti->enable_dh;
+  tls->ciphers      = su_strdup(tls->home, ti->ciphers);
+  tls->passphrase   = su_strdup(tls->home, ti->passphrase);
 
   return 0;
 }
@@ -581,12 +587,30 @@ int tls_reload_cert(tls_t *tls, tls_issues_t *ti)
                    | (tls->verify_subj_in  ? 0x4 : 0)
                    | (tls->verify_subj_out ? 0x8 : 0);
   ti->verify_date  = tls->verify_date;
+  ti->enable_dh    = tls->enable_dh;
+  ti->ciphers      = tls->ciphers;
+  ti->passphrase   = tls->passphrase;
 
   tls_set_default(ti);
 
   new_ctx = tls_create_ctx(ti);
   if (!new_ctx) {
     SU_DEBUG_1(("tls_reload_cert: failed to create new context\n" VA_NONE));
+    return -1;
+  }
+
+  /* tls_create_ctx() only logs certificate and key load errors, because
+   * at startup a TLS transport may run without local credentials. A reload
+   * must not replace working credentials with unusable ones, so require a
+   * loaded certificate and a private key that matches it. */
+  ERR_clear_error();
+  if (SSL_CTX_check_private_key(new_ctx) != 1) {
+    SU_DEBUG_1(("tls_reload_cert: %s: certificate or private key missing, "
+                "invalid or mismatched, keeping current certificates\n",
+                ti->cert));
+    tls_log_errors(3, "tls_reload_cert", 0);
+    SSL_CTX_free(new_ctx);
+    errno = EINVAL;
     return -1;
   }
 
