@@ -117,6 +117,11 @@ enum {
 				/**< Maximum value for timers. */
 };
 
+typedef struct nta_outgoing_query_results_data_s {
+  char **results;
+  size_t found;
+} nta_outgoing_query_results_data_t;
+
 /* ----------------------------------------------------------------------
  * 3) Agent-level prototypes
  */
@@ -135,6 +140,7 @@ nta_agent_t *nta_agent_create(su_root_t *root,
 
 SOFIAPUBFUN void nta_agent_destroy(nta_agent_t *agent);
 SOFIAPUBFUN void nta_agent_resolver_clean_cache(nta_agent_t *agent);
+SOFIAPUBFUN int nta_agent_reload_tls(nta_agent_t *agent, char const *cert_dir);
 
 SOFIAPUBFUN char const *nta_agent_version(nta_agent_t const *a);
 SOFIAPUBFUN nta_agent_magic_t *nta_agent_magic(nta_agent_t const *a);
@@ -414,6 +420,10 @@ SOFIAPUBFUN uint32_t nta_outgoing_cseq(nta_outgoing_t const *orq);
 SOFIAPUBFUN char const *nta_outgoing_branch(nta_outgoing_t const *orq);
 
 SOFIAPUBFUN unsigned nta_outgoing_delay(nta_outgoing_t const *orq);
+
+SOFIAPUBFUN char const *nta_outgoing_cannon(nta_outgoing_t const *orq);
+SOFIAPUBFUN char const *nta_outgoing_host(nta_outgoing_t const *orq);
+SOFIAPUBFUN nta_outgoing_query_results_data_t *nta_outgoing_query_results(nta_outgoing_t const *orq, char ***results, size_t *found);
 
 SOFIAPUBFUN url_t const *nta_outgoing_request_uri(nta_outgoing_t const *orq);
 SOFIAPUBFUN url_t const *nta_outgoing_route_uri(nta_outgoing_t const *orq);

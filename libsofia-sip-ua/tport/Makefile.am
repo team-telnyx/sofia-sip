@@ -29,6 +29,11 @@ check_PROGRAMS =	test_tport
 
 TESTS =			test_tport
 
+if HAVE_TLS
+check_PROGRAMS +=	test_tport_tls
+TESTS +=		test_tport_tls
+endif
+
 # ----------------------------------------------------------------------
 # Rules for building the targets
 
@@ -78,12 +83,14 @@ LDADD = 		libtport.la \
 			../su/libsu.la
 
 test_tport_LDFLAGS = 	-static
+test_tport_tls_LDFLAGS = -static
 
 # ----------------------------------------------------------------------
 # Install and distribution rules
 
 EXTRA_DIST =		tport.docs \
-			certificates.html agent.pem cafile.pem
+			certificates.html agent.pem cafile.pem \
+			tls-reload/dhparams.pem
 
 # ----------------------------------------------------------------------
 # Sofia specific rules
