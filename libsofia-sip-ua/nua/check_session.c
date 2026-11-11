@@ -2206,11 +2206,12 @@ END_TEST
 START_TEST(call_3_2_2)
 {
   nua_handle_t *nh;
-  struct message *invite, *bye;
+  struct message *invite;
   int i;
 
   S2_CASE("3.2.2", "Re-INVITE fails after too many retries",
-	  "Call fails after 4 times 500 Retry-After");
+	  "Re-INVITE fails after 4 times 500 Retry-After, "
+	  "dialog is preserved (no BYE)");
 
   nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor),
 		  NUTAG_RETRY_COUNT(3),
@@ -2237,14 +2238,10 @@ START_TEST(call_3_2_2)
   }
 
   fail_unless_event(nua_r_invite, 500);
-  /* Graceful termination */
-  fail_unless(s2_check_callstate(nua_callstate_terminating));
-  bye = s2_sip_wait_for_request(SIP_METHOD_BYE);
-  fail_if(!bye);
-  s2_sip_respond_to(bye, dialog, SIP_200_OK, TAG_END());
-  s2_sip_free_message(bye);
-  fail_unless_event(nua_r_bye, 200);
-  fail_unless(s2_check_callstate(nua_callstate_terminated));
+  /* A 500 to a re-INVITE keeps the session (TELCORE-212) */
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+
+  bye_by_nua(nh, TAG_END());
 
   nua_handle_destroy(nh);
 }
