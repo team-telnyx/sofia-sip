@@ -1128,7 +1128,13 @@ static int nua_invite_client_report(nua_client_request_t *cr,
     next_state = nua_callstate_terminated;
   }
   else if (cr->cr_graceful && ss->ss_state >= nua_callstate_completing) {
-    next_state = nua_callstate_terminating;
+    if (!cr->cr_initial && status == 500) {
+      cr->cr_graceful = 0;
+      next_state = nua_callstate_init;
+    }
+    else {
+      next_state = nua_callstate_terminating;
+    }
   }
   else {
     next_state = nua_callstate_init;
@@ -2524,7 +2530,11 @@ int nua_invite_server_is_100rel(nua_server_request_t *sr, tagi_t const *tags)
     return 0;
   if (sr->sr_status == 183)
     return 1;
-  if (sr->sr_status == 180)
+  /* A 180 is only sent reliably when it can carry something. On a delayed-offer INVITE
+     it can not: a reliable provisional would be the first reliable non-failure message and
+     is then required to carry the offer, which a 180 never does. Sending it unreliably
+     leaves the offer for the first message that can hold one. */
+  if (sr->sr_status == 180 && (sr->sr_offer_recv || NH_PGET(nh, reliable_180_nosdp)))
     return 1;
 
   if (NH_PGET(nh, early_media) && !NH_PGET(nh, only183_100rel))
