@@ -906,20 +906,32 @@ static int nua_invite_client_preliminary(nua_client_request_t *cr,
       nua_dialog_uac_route(nh, nh->nh_ds, sip, 1, 1);
       nua_dialog_store_peer_info(nh, nh->nh_ds, sip);
 
-      /* Tag the INVITE request */
-      tagged = nta_outgoing_tagged(cr->cr_orq,
-          nua_client_orq_response, cr,
-          sip->sip_to->a_tag, sip->sip_rseq);
-      if (tagged) {
-        if (nh->nh_prefs->nhp_tagged_on_prack) {
-          nta_outgoing_destroy(cr->cr_orq), cr->cr_orq = tagged;
-        } else {
-          nta_outgoing_destroy(tagged);
+      /* Tag the INVITE request.
+       *
+       * Without NUTAG_TAGGED_ON_PRACK() keep the untagged transaction so
+       * that responses from other early dialogs still reach it. Do not
+       * create a tagged fork only to destroy it: nta keeps a destroyed fork
+       * registered until the INVITE transaction ends, and it swallows
+       * every later response carrying the same To tag, including the
+       * next reliable provisional response and the final 2xx. */
+      if (!nh->nh_prefs->nhp_tagged_on_prack) {
+        /* RFC 3262 requires a To tag on a reliable provisional response */
+        if (!sip->sip_to->a_tag) {
+          cr->cr_graceful = 1;
+          ss->ss_reason = "SIP;cause=500;text=\"Cannot Create Early Dialog\"";
         }
       }
       else {
-        cr->cr_graceful = 1;
-        ss->ss_reason = "SIP;cause=500;text=\"Cannot Create Early Dialog\"";
+        tagged = nta_outgoing_tagged(cr->cr_orq,
+            nua_client_orq_response, cr,
+            sip->sip_to->a_tag, sip->sip_rseq);
+        if (tagged) {
+          nta_outgoing_destroy(cr->cr_orq), cr->cr_orq = tagged;
+        }
+        else {
+          cr->cr_graceful = 1;
+          ss->ss_reason = "SIP;cause=500;text=\"Cannot Create Early Dialog\"";
+        }
       }
     }
 
