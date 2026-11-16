@@ -914,7 +914,14 @@ static int nua_invite_client_preliminary(nua_client_request_t *cr,
        * registered until the INVITE transaction ends, and it swallows
        * every later response carrying the same To tag, including the
        * next reliable provisional response and the final 2xx. */
-      if (nh->nh_prefs->nhp_tagged_on_prack) {
+      if (!nh->nh_prefs->nhp_tagged_on_prack) {
+        /* RFC 3262 requires a To tag on a reliable provisional response */
+        if (!sip->sip_to->a_tag) {
+          cr->cr_graceful = 1;
+          ss->ss_reason = "SIP;cause=500;text=\"Cannot Create Early Dialog\"";
+        }
+      }
+      else {
         tagged = nta_outgoing_tagged(cr->cr_orq,
             nua_client_orq_response, cr,
             sip->sip_to->a_tag, sip->sip_rseq);
