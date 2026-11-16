@@ -1599,6 +1599,57 @@ START_TEST(call_2_4_5)
 }
 END_TEST
 
+START_TEST(call_2_4_6)
+{
+  nua_handle_t *nh;
+  struct message *invite, *prack, *ack;
+  int with_sdp;
+
+  S2_CASE("2.4.6", "Call with 100rel without NUTAG_TAGGED_ON_PRACK()",
+	  "NUA sends INVITE with NUTAG_TAGGED_ON_PRACK(0), "
+	  "receives 183, sends PRACK, receives 200 for it, "
+	  "receives 180 from the same early dialog, sends PRACK, "
+	  "receives 200 for it, receives 200, send ACK.");
+
+  nh = nua_handle(nua, NULL, SIPTAG_TO(s2sip->aor),
+		  NUTAG_TAGGED_ON_PRACK(0),
+		  TAG_END());
+
+  invite = invite_sent_by_nua(
+    nh, SOATAG_USER_SDP_STR("m=audio 5004 RTP/AVP 0 8"),
+    TAG_END());
+  process_offer(invite);
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 1,
+			      SIP_183_SESSION_PROGRESS,
+			      TAG_END());
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  prack = respond_with_100rel(invite, dialog, with_sdp = 0,
+			      SIP_180_RINGING,
+			      TAG_END());
+  s2_sip_respond_to(prack, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(prack), prack = NULL;
+  fail_unless(s2_check_callstate(nua_callstate_proceeding));
+  fail_unless_event(nua_r_prack, 200);
+
+  s2_sip_respond_to(invite, dialog, SIP_200_OK, TAG_END());
+  s2_sip_free_message(invite);
+  fail_unless_event(nua_r_invite, 200);
+  fail_unless(s2_check_callstate(nua_callstate_ready));
+  ack = s2_sip_wait_for_request(SIP_METHOD_ACK);
+  fail_if(!ack);
+  s2_sip_free_message(ack);
+
+  bye_to_nua(nh, TAG_END());
+
+  nua_handle_destroy(nh);
+}
+END_TEST
+
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
@@ -1609,6 +1660,7 @@ TCase *invite_100rel_tcase(int threading)
     tcase_add_test(tc, call_2_4_3);
     tcase_add_test(tc, call_2_4_4);
     tcase_add_test(tc, call_2_4_5);
+    tcase_add_test(tc, call_2_4_6);
   }
   return tc;
 }
