@@ -116,6 +116,35 @@ add_call_fixtures(TCase *tc, int threading)
     tcase_add_checked_fixture(tc, call_setup, call_teardown);
 }
 
+/* The 100rel and precondition cases were written against upstream nua,
+ * which replaces the untagged INVITE transaction with a tagged one on the
+ * first reliable provisional response. This fork does that only when
+ * NUTAG_TAGGED_ON_PRACK(1) is set (FreeSWITCH profile parameter
+ * tagged-on-prack), so these fixtures turn it on. */
+static void call_tagged_on_prack_setup(void)
+{
+  call_setup();
+
+  nua_set_params(nua, NUTAG_TAGGED_ON_PRACK(1), TAG_END());
+  fail_unless_event(nua_r_set_params, 200);
+}
+
+static void call_tagged_on_prack_thread_setup(void)
+{
+  s2_nua_thread = 1;
+  call_tagged_on_prack_setup();
+}
+
+static void
+add_call_tagged_on_prack_fixtures(TCase *tc, int threading)
+{
+  if (threading)
+    tcase_add_checked_fixture(tc, call_tagged_on_prack_thread_setup,
+			      call_teardown);
+  else
+    tcase_add_checked_fixture(tc, call_tagged_on_prack_setup, call_teardown);
+}
+
 static void save_sdp_to_soa(struct message *message)
 {
   sip_payload_t *pl;
@@ -1573,7 +1602,7 @@ END_TEST
 TCase *invite_100rel_tcase(int threading)
 {
   TCase *tc = tcase_create("2.4 - INVITE with 100rel");
-  add_call_fixtures(tc, threading);
+  add_call_tagged_on_prack_fixtures(tc, threading);
   {
     tcase_add_test(tc, call_2_4_1);
     tcase_add_test(tc, call_2_4_2);
@@ -1808,7 +1837,7 @@ END_TEST
 TCase *invite_precondition_tcase(int threading)
 {
   TCase *tc = tcase_create("2.5 - Call with preconditions");
-  add_call_fixtures(tc, threading);
+  add_call_tagged_on_prack_fixtures(tc, threading);
   {
     tcase_add_test(tc, call_2_5_1);
     tcase_add_test(tc, call_2_5_2);
