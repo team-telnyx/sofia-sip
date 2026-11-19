@@ -212,6 +212,7 @@ struct tport_s {
 
   msg_t   	     *tp_msg;		/**< Message being received */
   msg_t const        *tp_rlogged;       /**< Last logged when receiving */
+  msg_t const        *tp_rcaptured;     /**< Last HEP-captured when receiving */
   su_time_t           tp_rtime;	        /**< Last time received data */
   unsigned short      tp_ping;	        /**< Whitespace ping being received */
 
@@ -310,6 +311,7 @@ struct tport_master {
   tport_primary_t    *mr_primaries;        /**< List of primary contacts */
   unsigned	      mr_prot_ver;	/* hep version */
   unsigned	      mr_agent_id;      /* agent version */
+  unsigned	      mr_capt_bufsize;  /* per-message HEP capture buffer cap (bytes). */
 
   tport_params_t      mr_params[1];
 
